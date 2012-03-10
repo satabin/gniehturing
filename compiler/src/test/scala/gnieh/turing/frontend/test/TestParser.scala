@@ -17,9 +17,10 @@
  *                                                                         *
  * *************************************************************************
  */
-package gnieh.turing.frontend
+package gnieh.turing
 package test
 
+import parser._
 import org.parboiled.scala._
 import org.parboiled.errors.{ ErrorUtils, ParsingException }
 

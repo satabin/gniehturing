@@ -17,7 +17,7 @@
  *                                                                         *
  * *************************************************************************
  */
-package gnieh.turing.frontend
+package gnieh.turing.tree
 
 /**
  * @author Lucas Satabin
@@ -31,8 +31,8 @@ final case class Ident(name: String) extends Node {
 }
 
 final case class CompilationUnit(module: Option[Ident],
-  uses: List[Ident],
-  machines: List[Machine]) extends Node {
+                                 uses: List[Ident],
+                                 machines: List[Machine]) extends Node {
   override def toString = {
     val mod = module match {
       case Some(m) => "module " + m + "\n\n"
@@ -55,10 +55,10 @@ final case class Var(name: Ident, tpe: Option[Type] = None) extends Node {
 }
 
 final case class Machine(name: Ident,
-  param: List[Var],
-  tapes: List[Var] = Nil,
-  transitions: List[Transition] = Nil,
-  oracle: Boolean = true) extends Node {
+                         param: List[Var],
+                         tapes: List[Var] = Nil,
+                         transitions: List[Transition] = Nil,
+                         oracle: Boolean = true) extends Node {
   override def toString = {
     val or = if (oracle)
       "orcale"
@@ -73,9 +73,9 @@ final case class Machine(name: Ident,
 }
 
 final case class Transition(initial: Option[InitialState],
-  read: Read,
-  actions: List[Action],
-  next: Next) extends Node {
+                            read: Read,
+                            actions: List[Action],
+                            next: Next) extends Node {
   override def toString =
     initial.getOrElse(" ") + " | " + read + " | " + actions.mkString(" ") +
       " | " + next
@@ -141,6 +141,17 @@ final case class SingleChar(tape: Option[Ident], char: Char) extends Read {
     }
 
     tap + "'" + char + "'"
+  }
+}
+
+final case class IdentRead(tape: Option[Ident], name: Ident) extends Read {
+  override def toString = {
+    val tap = tape match {
+      case Some(t) => t + "."
+      case _ => ""
+    }
+
+    tap + name
   }
 }
 
@@ -213,7 +224,7 @@ final case class NextIdent(name: Ident) extends Next {
   override def toString = name.toString
 }
 final case class NextCall(tape: Option[Ident], name: Ident, args: List[Arg])
-  extends Next {
+    extends Next {
   override def toString = {
     val tap = tape match {
       case Some(t) => t + "."

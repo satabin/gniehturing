@@ -19,6 +19,7 @@
  */
 package gnieh.turing.frontend
 
+import gnieh.turing.tree._
 import org.parboiled.scala._
 
 /**
@@ -130,7 +131,8 @@ object GTuringParser extends Parser {
       optional(affect) ~ optional(tapePrefix) ~ "all" ~ whitespace ~~> AllChar |
       optional(tapePrefix) ~ "none" ~ whitespace ~~> NoneChar |
       optional(tapePrefix) ~ "'" ~ (normalChar | escapedChar) ~>
-      (_.charAt(0)) ~~> SingleChar ~ "'" ~ whitespace
+      (_.charAt(0)) ~~> SingleChar ~ "'" ~ whitespace |
+      optional(tapePrefix) ~ ident ~~> IdentRead ~ whitespace
   }
 
   /**

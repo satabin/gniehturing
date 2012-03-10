@@ -17,7 +17,7 @@
  *                                                                         *
  * *************************************************************************
  */
-package gnieh.turing.frontend
+package gnieh.turing.tree
 
 /**
  * @author Lucas Satabin

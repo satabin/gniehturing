@@ -17,16 +17,25 @@
  *                                                                         *
  * *************************************************************************
  */
-package gnieh.turing.tree
+package gnieh.turing
+package tree
+
+import scala.util.parsing.input.{ Position, Positional }
+import util.TMDLPosition
 
 /**
  * @author Lucas Satabin
  *
  */
-sealed trait Node
+sealed trait Node extends Positional
 
 /** This class represents an identifier with a given name */
 final case class Ident(name: String) extends Node {
+  override def setPos(p: Position) = p match {
+    case tmdlPos: TMDLPosition =>
+      super.setPos(tmdlPos.copy(column = p.column - name.length))
+    case _ => super.setPos(p)
+  }
   override def toString = name
 }
 
@@ -48,6 +57,7 @@ final case class CompilationUnit(module: Option[Ident],
 }
 
 final case class Var(name: Ident, tpe: Option[Type] = None) extends Node {
+
   override def toString = tpe match {
     case Some(t) => name + ": " + t
     case _ => name.toString
@@ -59,6 +69,7 @@ final case class Machine(name: Ident,
                          tapes: List[Var] = Nil,
                          transitions: List[Transition] = Nil,
                          oracle: Boolean = true) extends Node {
+
   override def toString = {
     val or = if (oracle)
       "orcale"
@@ -76,6 +87,7 @@ final case class Transition(initial: Option[InitialState],
                             read: Read,
                             actions: List[Action],
                             next: Next) extends Node {
+
   override def toString =
     initial.getOrElse(" ") + " | " + read + " | " + actions.mkString(" ") +
       " | " + next
@@ -83,10 +95,12 @@ final case class Transition(initial: Option[InitialState],
 
 sealed trait InitialState extends Node
 final case class Decl(name: Ident, params: List[Var]) extends InitialState {
+
   override def toString =
     name + params.mkString("(", ", ", ")")
 }
 final case class Named(name: Ident) extends InitialState {
+
   override def toString = name.toString
 }
 
@@ -94,6 +108,7 @@ sealed trait Read extends Node {
   val tape: Option[Ident]
 }
 final case class AnyChar(local: Option[Var], tape: Option[Ident]) extends Read {
+
   override def toString = {
     val l = local match {
       case Some(l) => l + " <- "
@@ -134,6 +149,7 @@ final case class NoneChar(tape: Option[Ident]) extends Read {
   }
 }
 final case class SingleChar(tape: Option[Ident], char: Char) extends Read {
+
   override def toString = {
     val tap = tape match {
       case Some(t) => t + "."
@@ -145,6 +161,7 @@ final case class SingleChar(tape: Option[Ident], char: Char) extends Read {
 }
 
 final case class IdentRead(tape: Option[Ident], name: Ident) extends Read {
+
   override def toString = {
     val tap = tape match {
       case Some(t) => t + "."

@@ -18,29 +18,45 @@
  * *************************************************************************
  */
 package gnieh.turing
-package test
+package symbol
 
-import parser._
-import org.parboiled.scala._
-import org.parboiled.errors.{ ErrorUtils, ParsingException }
+import tree._
+import scala.collection.mutable.Set
 
 /**
  * @author Lucas Satabin
  *
  */
-object TestParser extends App {
+abstract class Symbol(val name: String, val tpe: Type, val owner: Option[Symbol]) {
 
-  import GTuringParser._
+  private[Symbol] val children = Set.empty[Symbol]
 
-  val parsingResult = ReportingParseRunner(machine).run(
-    """m(a: char, toto: state)
-      plop: tape
-      q | 'a' | del right 5 | d
-      | test <- any | write "plop" toto.left | end--""")
-  parsingResult.result match {
-    case Some(m) => println(m)
-    case None => throw new ParsingException("Invalid machine expression:\n" +
-      ErrorUtils.printParseErrors(parsingResult))
+  owner match {
+    case Some(sym) =>
+      sym.children += this
+    case None => // do nothing
+  }
+
+  /** Returns the list of params for this symbol if any*/
+  def params: List[Symbol]
+
+  def lookup(sym: String): List[Symbol] = {
+    if (sym == name)
+      List(this)
+    else owner match {
+      case Some(o) => o.lookup(sym)
+      case None => Nil
+    }
   }
 
 }
+
+class VariableSymbol(name: String, tpe: Type, owner: Symbol)
+    extends Symbol(name, tpe, Some(owner)) {
+  val params = Nil
+}
+
+class MachineSymbol(name: String,
+                    val params: List[Symbol],
+                    owner: Symbol)
+    extends Symbol(name, TMachine(params.map(_.tpe)), Some(owner))

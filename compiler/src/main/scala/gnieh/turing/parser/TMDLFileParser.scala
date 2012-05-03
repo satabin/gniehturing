@@ -17,22 +17,47 @@
  *                                                                         *
  * *************************************************************************
  */
-package gnieh.turing.tree
+package gnieh.turing
+package parser
+
+import util.Arm._
+import util.{ Reporter, Error => GTError }
+import java.io._
+
+import tree.CompilationUnit
 
 /**
+ * This class allows the user to parse a bunch of TDML files.
+ *
  * @author Lucas Satabin
  *
  */
-sealed trait Type
-case object TChar extends Type {
-  override def toString = "char"
-}
-case object TState extends Type {
-  override def toString = "state"
-}
-case object TTape extends Type {
-  override def toString = "tape"
-}
-case class TMachine(params: List[Type]) extends Type {
-  override def toString = params.mkString("(", ", ", ")") + ": state"
+class TMDLFileParser(val inputFiles: List[File], reporter: Reporter) {
+
+  /** Parses the input file and returns the parsed compilation unit */
+  private def parse(file: File) = {
+    using(new FileReader(file)) { reader =>
+      import GTuringParser._
+
+      parseAll(unit, reader) match {
+        case Success(res, _) => Some(res)
+        case failure =>
+          reporter.report(failure.toString, GTError)
+          None
+      }
+    }
+  }
+
+  /**
+   * Parses all input files and returns the result of the successfully
+   * parsed ones
+   */
+  def parseAllFiles: List[CompilationUnit] =
+    inputFiles.foldLeft(List[CompilationUnit]()) { (list, file) =>
+      parse(file) match {
+        case Some(unit) => unit :: list
+        case None => list
+      }
+    }
+
 }

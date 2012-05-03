@@ -17,10 +17,13 @@
  *                                                                         *
  * *************************************************************************
  */
-package gnieh.turing.parser
+package gnieh.turing
+package parser
 
+import util._
+import scala.util.parsing.combinator.RegexParsers
+import scala.util.parsing.input._
 import gnieh.turing.tree._
-import org.parboiled.scala._
 
 /**
  *
@@ -29,95 +32,89 @@ import org.parboiled.scala._
  * @author Lucas Satabin
  *
  */
-object GTuringParser extends Parser {
+object GTuringParser extends RegexParsers {
 
   /**
    * Parses a compilation unit
    * <unit> ::= <module>? <use>* <machine>*
    */
-  def unit = rule {
-    whitespace ~ optional(module) ~
-      zeroOrMore(use) ~ zeroOrMore(machine) ~~> CompilationUnit
-  }
+  lazy val unit: Parser[CompilationUnit] =
+    opt(module) ~ rep(use) ~ rep(machine) ^^ {
+      case mod ~ uses ~ machines => CompilationUnit(mod, uses, machines)
+    }
 
   /**
    * <module> ::= `module' <ident>
    */
-  def module: Rule1[Ident] = rule {
-    "module" ~ ident
-  }
+  lazy val module: Parser[Ident] =
+    positioned("module" ~> ident)
 
   /**
    * <use> ::= `use' <ident>
    */
-  def use: Rule1[Ident] = rule {
-    "use" ~ ident
-  }
+  lazy val use: Parser[Ident] =
+    positioned("use" ~> ident)
 
   /**
    * <machine> ::= `oracle' <ident> `(' <param>* `)'
    *             | <ident> `(' <param>* `)' <tape>* <transition>+ `--'
    */
-  def machine /*: Rule1[Machine]*/ = rule {
-    "oracle" ~ decl ~~>
-      ((ident: Ident, params: List[Var]) => Machine(ident, params)) |
-      decl ~ zeroOrMore(tape) ~ zeroOrMore(transition) ~~>
-      ((ident: Ident, params: List[Var], tapes: List[Var],
-        transitions: List[Transition]) =>
-        Machine(ident, params, tapes, transitions, false)) ~ "--" ~ whitespace
-  }
+  lazy val machine: Parser[Machine] =
+    positioned(
+      "oracle" ~> decl ^^ {
+        case (ident, params) => Machine(ident, params)
+      }
+        | decl ~ rep(tape) ~ rep(transition) <~ "--" ^^ {
+          case (ident, params) ~ tapes ~ transitions =>
+            Machine(ident, params, tapes, transitions, false)
+        })
 
-  def decl: Rule2[Ident, List[Var]] = rule {
-    ident ~ paramList ~ whitespace
-  }
+  lazy val decl: Parser[(Ident, List[Var])] =
+    ident ~ paramList ^^ {
+      case id ~ params => (id, params)
+    }
 
-  private def paramList: Rule1[List[Var]] = rule {
-    "(" ~ zeroOrMore(param, "," ~ whitespace) ~~> (l => l) ~ ")"
-  }
+  private lazy val paramList: Parser[List[Var]] =
+    "(" ~> repsep(param, ",") <~ ")"
 
   /**
    * <param> ::= <ident> <type_annot>?
    * <type_annot> ::= `:' <tpe>
    */
-  def param: Rule1[Var] = rule {
-    ident ~ optional(":" ~ whitespace ~ tpe) ~~> Var
-  }
+  lazy val param: Parser[Var] =
+    positioned(ident ~ opt(":" ~> tpe) ^^ {
+      case id ~ tpe => Var(id, tpe)
+    })
 
   /**
    * <tpe> ::= `char'
    *         | `state'
    *         | `tape'
    */
-  def tpe: Rule1[Type] = rule {
-    "char" ~ push(TChar) |
-      "state" ~ push(TState) |
-      "tape" ~ push(TTape)
-  }
+  lazy val tpe: Parser[Type] =
+    "char" ^^^ TChar | "state" ^^^ TState | "tape" ^^^ TTape
 
   /**
    * <tape> ::= <ident> `:' `tape'
    */
-  def tape: Rule1[Var] = rule {
-    ident ~ ":" ~ whitespace ~ "tape" ~ whitespace ~~> ((ident: Ident) => Var(ident, Some(TTape)))
-  }
+  lazy val tape: Parser[Var] =
+    positioned(ident <~ (":" ~ "tape") ^^ (Var(_, Some(TTape))))
 
   /**
    * <transition> ::= <initial_state>? `|' <read> `|' <action>* `|' <next>
    */
-  def transition = rule {
-    optional(initial) ~ "|" ~ whitespace ~ read ~ "|" ~ whitespace ~
-      zeroOrMore(action) ~ "|" ~ whitespace ~ next ~~>
-      Transition
-  }
+  lazy val transition: Parser[Transition] =
+    (opt(initial) <~ "|") ~ (read <~ "|") ~ (rep(action) <~ "|") ~ next ^^ {
+      case init ~ read ~ actions ~ next =>
+        Transition(init, read, actions, next)
+    }
 
   /**
    * <initial_state> ::= <decl>
    *                   | <ident>
    */
-  def initial: Rule1[InitialState] = rule {
-    decl ~~> Decl |
-      ident ~~> Named
-  }
+  lazy val initial: Parser[InitialState] =
+    positioned(decl ^^ Decl.tupled | ident ^^ Named)
 
   /**
    * <read> ::= <affect>? <tape_prefix>? `any'
@@ -126,14 +123,21 @@ object GTuringParser extends Parser {
    *          | <tape_prefix>? <char>
    *          | <tape_prefix>? <ident>
    */
-  def read: Rule1[Read] = rule {
-    optional(affect) ~ optional(tapePrefix) ~ "any" ~ whitespace ~~> AnyChar |
-      optional(affect) ~ optional(tapePrefix) ~ "all" ~ whitespace ~~> AllChar |
-      optional(tapePrefix) ~ "none" ~ whitespace ~~> NoneChar |
-      optional(tapePrefix) ~ "'" ~ (normalChar | escapedChar) ~>
-      (_.charAt(0)) ~~> SingleChar ~ "'" ~ whitespace |
-      optional(tapePrefix) ~ ident ~~> IdentRead ~ whitespace
-  }
+  lazy val read: Parser[Read] =
+    positioned(
+      opt(affect) ~ opt(tapePrefix) <~ "any" ^^ {
+        case affect ~ tape => AnyChar(affect, tape)
+      }
+        | opt(affect) ~ opt(tapePrefix) <~ "all" ^^ {
+          case affect ~ tape => AllChar(affect, tape)
+        }
+        | opt(tapePrefix) <~ "none" ^^ NoneChar
+        | opt(tapePrefix) ~ char ^^ {
+          case tape ~ char => SingleChar(tape, char)
+        }
+        | opt(tapePrefix) ~ ident ^^ {
+          case tape ~ name => IdentRead(tape, name)
+        })
 
   /**
    * <action> ::= <tape_prefix>? `del'
@@ -143,18 +147,25 @@ object GTuringParser extends Parser {
    *            | <tape_prefix>? `left' <number>?
    *            | <tape_prefix>? `right' <number>?
    */
-  def action: Rule1[Action] = rule {
-    optional(tapePrefix) ~ "del" ~ whitespace ~~> Del |
-      optional(tapePrefix) ~ "write" ~ whitespace ~ "'" ~ ANY ~> (_.charAt(0)) ~ "'" ~~>
-      WriteChar ~ whitespace |
-      optional(tapePrefix) ~ "write" ~ whitespace ~ "\"" ~ zeroOrMore(normalChar | escapedChar) ~> (s => s) ~
-      "\"" ~~> WriteString ~ whitespace |
-      optional(tapePrefix) ~ "write" ~ whitespace ~ ident ~~> WriteVar ~ whitespace |
-      optional(tapePrefix) ~ "left" ~ whitespace ~ optional(oneOrMore(number) ~> (_.mkString("", "", "").toInt)) ~~>
-      (_ getOrElse 1) ~~> Left ~ whitespace |
-      optional(tapePrefix) ~ "right" ~ whitespace ~ optional(oneOrMore(number) ~> (_.mkString("", "", "").toInt)) ~~>
-      (_ getOrElse 1) ~~> Right ~ whitespace
-  }
+  lazy val action: Parser[Action] =
+    positioned(
+      opt(tapePrefix) <~ "del" ^^ Del
+        | opt(tapePrefix) ~ ("write" ~> char) ^^ {
+          case tape ~ char => WriteChar(tape, char)
+        }
+        | opt(tapePrefix) ~ ("write" ~> string) ^^ {
+          case tape ~ string => WriteString(tape, string)
+        }
+        | opt(tapePrefix) ~ ("write" ~> ident) ^^ {
+          case tape ~ ident => WriteVar(tape, ident)
+        }
+        | opt(tapePrefix) ~ ("left" ~> opt(number)) ^^ {
+          case tape ~ number => Left(tape, number.getOrElse(1))
+        }
+        | opt(tapePrefix) ~ ("right" ~> opt(number)) ^^ {
+          case tape ~ number => Right(tape, number.getOrElse(1))
+        })
+
   /**
    * <next> ::= `end'
    *          | ident
@@ -163,56 +174,37 @@ object GTuringParser extends Parser {
    *         | <char>
    *
    */
-  def next: Rule1[Next] = rule {
-    "end" ~ whitespace ~ push(End) |
-      optional(tapePrefix) ~ ident ~ "(" ~ zeroOrMore(next |
-        (ANY ~> (s => CharArg(s charAt 0))), ",") ~ ")" ~ whitespace ~~> NextCall |
-      ident ~~> NextIdent
-  }
+  lazy val next: Parser[Next] =
+    positioned(
+      "end" ^^^ End
+        | opt(tapePrefix) ~ ident ~
+        ("(" ~> repsep(next | char ^^ CharArg, ",") <~ ")") ^^ {
+          case tape ~ name ~ args => NextCall(tape, name, args)
+        }
+        | ident ^^ NextIdent)
 
   /**
    * <tape_prefix> ::= <ident> `.'
    */
-  def tapePrefix: Rule1[Ident] = rule {
-    ident ~ "."
-  }
+  lazy val tapePrefix: Parser[Ident] =
+    ident <~ "."
 
   /**
    * <affect> ::= ident `<-'
    */
-  def affect = rule {
-    ident ~~> (Var(_, Some(TChar))) ~ "<-" ~ whitespace
-  }
+  lazy val affect: Parser[Var] =
+    positioned(ident <~ "<-" ^^ (Var(_, Some(TChar))))
 
-  private def escapedChar: Rule0 = rule {
-    "\\" ~ anyOf("\"\\bfnrt")
-  }
+  lazy val char: Parser[Char] =
+    "'.'".r ^^ (_.charAt(1))
 
-  private def normalChar: Rule0 = rule {
-    !anyOf("\"\\") ~ ANY
-  }
+  lazy val string: Parser[String] =
+    "\"([^\"]|\\\")*\"".r ^^ (s => s.substring(1, s.length))
 
-  private def letter = rule {
-    "a" - "z" | "A" - "Z"
-  }
+  lazy val number: Parser[Int] =
+    "\\d+".r ^^ (_.toInt)
 
-  private def number = rule {
-    "0" - "9"
-  }
-
-  def ident = rule {
-    (letter ~> (s => s) ~ zeroOrMore(letter | number | "_") ~> (s => s)) ~~>
-      ((first, last) => first + last) ~~> Ident ~ whitespace
-  }
-
-  private def whitespace: Rule0 = rule {
-    zeroOrMore(anyOf(" \n\r\t\f"))
-  }
-
-  override implicit def toRule(string: String) =
-    if (string.endsWith(" "))
-      str(string.trim) ~ whitespace
-    else
-      str(string)
+  lazy val ident: Parser[Ident] =
+    positioned("[a-zA-Z_][a-zA-Z_0-9]*".r ^^ Ident)
 
 }

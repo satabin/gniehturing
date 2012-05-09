@@ -21,20 +21,33 @@ package gnieh.turing
 package symbol
 
 import tree._
-import scala.collection.mutable.Set
+import scala.collection.mutable.Map
 
 /**
  * @author Lucas Satabin
  *
  */
-abstract class Symbol(val name: String, val tpe: Type, val owner: Option[Symbol]) {
+abstract class Symbol(val name: String, val tpe: Type) {
 
-  private[Symbol] val children = Set.empty[Symbol]
+  private[this] var _owner: Option[Symbol] = None
 
-  owner match {
-    case Some(sym) =>
-      sym.children += this
-    case None => // do nothing
+  //  private[Symbol] val children = Map.empty[(String, List[Symbol]), Symbol]
+
+  def owner = _owner
+  def owner_=(sym: Option[Symbol]) = _owner = sym
+
+  def setOwner(sym: Symbol): this.type = {
+    // dereference from old owner children if any
+    //    owner match {
+    //      case Some(s) =>
+    //        s.children -= this
+    //      case None => // nothing to do
+    //    }
+    // set new owner
+    _owner = Option(sym)
+    // reference as child from new owner
+    //    sym.children += this
+    this
   }
 
   /** Returns the list of params for this symbol if any*/
@@ -51,12 +64,44 @@ abstract class Symbol(val name: String, val tpe: Type, val owner: Option[Symbol]
 
 }
 
-class VariableSymbol(name: String, tpe: Type, owner: Symbol)
-    extends Symbol(name, tpe, Some(owner)) {
+case class VariableSymbol(override val name: String,
+                          override val tpe: Type)
+    extends Symbol(name, tpe) {
   val params = Nil
 }
 
-class MachineSymbol(name: String,
-                    val params: List[Symbol],
-                    owner: Symbol)
-    extends Symbol(name, TMachine(params.map(_.tpe)), Some(owner))
+case class StateSymbol(override val name: String,
+                       val params: List[Symbol])
+    extends Symbol(name, TState) {
+
+}
+
+object SyntheticState {
+
+  var ind = 0
+
+  def apply(owner: Symbol) = {
+    val res = StateSymbol("synthetic$state$" + ind, Nil).setOwner(owner)
+    ind += 1
+    res
+  }
+}
+
+case class MachineSymbol(override val name: String,
+                         val params: List[Symbol],
+                         orcale: Boolean)
+    extends Symbol(name, TMachine(params.map(_.tpe)))
+
+case class ModuleSymbol(override val name: String)
+    extends Symbol(name, TModule) {
+  val params = Nil
+}
+
+case class ToInferSymbol(override val name: String)
+    extends Symbol(name, TUnknown) {
+  val params = Nil
+}
+
+case object NoSymbol extends Symbol("no-name", TUnknown) {
+  val params = Nil
+}

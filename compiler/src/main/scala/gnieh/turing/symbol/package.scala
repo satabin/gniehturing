@@ -17,31 +17,14 @@
  *                                                                         *
  * *************************************************************************
  */
-package gnieh.turing.tree
+package gnieh.turing
 
 /**
  * @author Lucas Satabin
  *
  */
-sealed trait Type
-case object TChar extends Type {
-  override def toString = "char"
-}
-case object TState extends Type {
-  override def toString = "state"
-}
-case object TTape extends Type {
-  override def toString = "tape"
-}
-case class TMachine(params: List[Type]) extends Type {
-  override def toString = params.mkString("(", ", ", ")") + ": state"
-}
-case class TTransition(params: List[Type]) extends Type {
-  override def toString = params.mkString("(", ", ", ")") + ": state"
-}
-case object TModule extends Type {
-  override def toString = "module"
-}
-case object TUnknown extends Type {
-  override def toString = "unknown"
+package object symbol {
+
+  val EmptyModuleSymbol = ModuleSymbol("<empty>")
+
 }

@@ -20,22 +20,24 @@
 package gnieh.turing
 package tree
 
+import symbol._
+
 import scala.util.parsing.input.{ Position, Positional }
-import util.TMDLPosition
 
 /**
  * @author Lucas Satabin
  *
  */
-sealed trait Node extends Positional
+sealed abstract class Node extends Positional {
+  var symbol: Symbol = NoSymbol
+  def setSymbol(sym: Symbol) = {
+    symbol = sym
+    this
+  }
+}
 
 /** This class represents an identifier with a given name */
 final case class Ident(name: String) extends Node {
-  override def setPos(p: Position) = p match {
-    case tmdlPos: TMDLPosition =>
-      super.setPos(tmdlPos.copy(column = p.column - name.length))
-    case _ => super.setPos(p)
-  }
   override def toString = name
 }
 

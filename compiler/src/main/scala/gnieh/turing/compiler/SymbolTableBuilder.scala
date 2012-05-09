@@ -18,10 +18,11 @@
  * *************************************************************************
  */
 package gnieh.turing
-package symbol
+package compiler
 
 import scala.util.DynamicVariable
 
+import symbol._
 import util._
 import tree._
 import tree.worker.Traverser

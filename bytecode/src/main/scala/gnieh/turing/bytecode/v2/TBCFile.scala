@@ -25,6 +25,8 @@ package gnieh.turing.bytecode.v2
  */
 case class TBCFile(version: String, modules: List[Module])
 
+case class TBCInterface(version: String, modules: Map[String, List[String]])
+
 case class Module(name: String, machines: List[Machine])
 
 case class Machine(name: String,

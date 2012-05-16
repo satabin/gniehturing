@@ -22,6 +22,8 @@ package v2
 
 import sbinary._
 
+import java.io.File
+
 /**
  * Allows the user to read/write a TBC v2.1 file.
  * The structure of such a file is the following:
@@ -51,6 +53,8 @@ object BytecodeProtocol extends DefaultProtocol {
 
   import Operations._
   import TBCProtocol._
+
+  // the protocol description
 
   implicit object InstructionFormat extends Format[Instruction] {
 
@@ -247,20 +251,34 @@ object BytecodeProtocol extends DefaultProtocol {
     }
   }
 
+  implicit object BytecodeHeaderFormat extends Reads[TBCInterface] {
+    def reads(in: Input) = {
+
+      // read the magic number
+      readMagic(in)
+
+      // read the version
+      val version = readVersion(in)
+
+      // read the module table
+      val module_table = readModuleTable(in)
+
+      val modules = module_table.map {
+        case (module_name, machines) =>
+          (module_name, machines.map(_._1))
+      }.toMap
+
+      TBCInterface(version, modules)
+
+    }
+  }
+
   implicit object BytecodeFormat extends Format[TBCFile] {
 
     def reads(in: Input) = {
-      def readMagic =
-        read(in)(U4Format) match {
-          case 0x2E544243 => // OK
-          case magic => // wrong magic number
-            throw new BytecodeFormatException(
-              "Wrong magic number! Expected: 0x2E544243, found: 0x" +
-                ("%02X".format(magic)))
-        }
 
       // read the magic number
-      readMagic
+      readMagic(in)
 
       // read the version
       val version = readVersion(in)
@@ -328,6 +346,21 @@ object BytecodeProtocol extends DefaultProtocol {
 
   }
 
+  // the interface to load and write files and headers
+
+  /** Loads the entire .tbc file */
+  def loadTBCFile(file: File) =
+    fromFile[TBCFile](file)
+
+  /** Writes the .tbc file */
+  def writeTBCFile(tbc: TBCFile, file: File) {
+    toFile(tbc)(file)
+  }
+
+  /** Loads the interface of modules and machines defined in this .tbc file*/
+  def loadTBCInterface(file: File) =
+    fromFile[TBCInterface](file)
+
   // helper methods and extractors
 
   private object MachineName {
@@ -347,6 +380,15 @@ object BytecodeProtocol extends DefaultProtocol {
         case _ => None
       }
   }
+
+  private def readMagic(in: Input) =
+    read(in)(U4Format) match {
+      case 0x2E544243 => // OK
+      case magic => // wrong magic number
+        throw new BytecodeFormatException(
+          "Wrong magic number! Expected: 0x2E544243, found: 0x" +
+            ("%02X".format(magic)))
+    }
 
   private def readVersion(in: Input) = {
     val major = read(in)(U1Format)

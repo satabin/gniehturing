@@ -159,11 +159,6 @@ object BytecodeProtocol extends DefaultProtocol {
       }
     }
 
-    /*
-     * opCode	tape (t)	register number (r)	length (n)	operand (d)
-	 * 8 bits	4 bits	    4 bits	            8 bits  	16 bits 
-     */
-
     def writes(out: Output, instr: Instruction) = instr match {
       case Pop(n) =>
         out.writeAll(Array(0x00, 0x00, (n & 0xff).toByte, 0x00, 0x00))
@@ -232,8 +227,8 @@ object BytecodeProtocol extends DefaultProtocol {
       case Call(tape, name, paramTypes) =>
         out.writeByte(0x0d)
         out.writeByte(((tape << 4) & 0xf0).toByte)
-        val string = name + paramTypes.mkString("(", "", ");")
-        out.writeAll(string.getBytes("ASCII"))
+        val string = name + paramTypes.mkString("(", "", ")")
+        write(out, string)(TBCStringFormat)
       case Return(offset, register) =>
         out.writeByte(0x0e)
         out.writeByte(register)
@@ -293,7 +288,43 @@ object BytecodeProtocol extends DefaultProtocol {
       TBCFile(version, modules)
     }
 
-    def writes(out: Output, value: TBCFile) = sys.error("Not implemented yet")
+    def writes(out: Output, file: TBCFile) {
+
+      // write first the magic number
+      write(out, 0x2E544243)(U4Format)
+
+      // write the version
+      write(out, 2.toShort)(U1Format)
+      write(out, 1.toShort)(U1Format)
+
+      // write the module count
+      write(out, file.modules.size)(U4Format)
+      var offset = 0
+      val instructions = file.modules.flatMap { module =>
+        // write the module name
+        write(out, module.name)(TBCStringFormat)
+        // write the machines count
+        write(out, module.machines.size)(U4Format)
+        // write the machine table
+        module.machines.map { machine =>
+          // write the machine name
+          write(out, machine.nameString)(TBCStringFormat)
+          // write the machine offset
+          write(out, offset)(U4Format)
+          offset += 1
+          machine.instructions
+        }
+      }
+
+      instructions.foreach { instrs =>
+        // write the instructions count
+        write(out, instrs.size)(U4Format)
+        instrs.foreach { instruction =>
+          // write the instruction
+          write(out, instruction)
+        }
+      }
+    }
 
   }
 

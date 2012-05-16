@@ -91,10 +91,7 @@ object TBCProtocol {
     }
 
     def writes(out: Output, s: String) {
-      s.toCharArray.foreach { c =>
-        out.writeByte((c & 0xFF).toByte)
-      }
-      out.writeByte((';' & 0xFF).toByte)
+      out.writeAll((s + ";").getBytes("ASCII"))
     }
   }
 

@@ -29,4 +29,8 @@ case class Module(name: String, machines: List[Machine])
 
 case class Machine(name: String,
                    paramTypes: List[Type],
-                   instructions: List[Instruction])
+                   instructions: List[Instruction]) {
+
+  def nameString = name + paramTypes.mkString("(", "", ")")
+
+}

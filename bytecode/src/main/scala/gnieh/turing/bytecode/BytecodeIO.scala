@@ -18,30 +18,36 @@
  * *************************************************************************
  */
 package gnieh.turing.bytecode
-package v2
+
+import java.io.File
 
 /**
- * A TBC instruction.
+ * A BytecodeIO allows the user to have a generic interface with
+ * a .tbc file.
  *
  * @author Lucas Satabin
  *
  */
-sealed trait Instruction
+trait BytecodeIO[Instr] {
 
-case class Pop(n: Short) extends Instruction
-case class Read(tape: Byte, compare: Short, offset: Int, register: Byte) extends Instruction
-case class ARead(tape: Byte, offset: Int, register: Byte) extends Instruction
-case class SRead(tape: Byte, offset: Int, register: Byte) extends Instruction
-case class Write(tape: Byte, char: Short) extends Instruction
-case class SWrite(tape: Byte, offset: Int, register: Byte) extends Instruction
-case class Movep(tape: Byte, of: Short) extends Instruction
-case class Movem(tape: Byte, of: Short) extends Instruction
-case class Jump(offset: Int, register: Byte) extends Instruction
-case class Loadl(value: Short) extends Instruction
-case class Loadc(tape: Byte) extends Instruction
-case class Load(offset: Int, register: Byte) extends Instruction
-case class SLoad(offset: Int, register: Byte) extends Instruction
-case class Call(tape: Byte, name: String, paramTypes: List[Type]) extends Instruction
-case class Return(offset: Int, register: Byte) extends Instruction
-case object End extends Instruction
-case class TAlloc(size: Int) extends Instruction
+  /** Loads the entire .tbc file */
+  def loadTBCFile(file: File): TBCFile[Instr]
+
+  /** Writes the .tbc file */
+  def writeTBCFile(tbc: TBCFile[Instr], file: File)
+
+  /** Loads the interface of modules and machines defined in this .tbc file*/
+  def loadTBCInterface(file: File): TBCInterface
+
+}
+
+object BytecodeIO {
+
+  /** Returns the BytecodeIO associated to the given instruction type. */
+  def forInstrType[Instr: Manifest]: Option[BytecodeIO[Instr]] =
+    if (manifest[Instr] == ClassManifest.fromClass(classOf[v2.Instruction]))
+      Some(v2.BytecodeProtocol.asInstanceOf[BytecodeIO[Instr]])
+    else
+      None
+
+}

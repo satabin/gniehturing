@@ -49,7 +49,9 @@ import java.io.File
  * @author Lucas Satabin
  *
  */
-object BytecodeProtocol extends DefaultProtocol {
+object BytecodeProtocol
+    extends DefaultProtocol
+    with BytecodeIO[Instruction] {
 
   import Operations._
   import TBCProtocol._
@@ -273,7 +275,7 @@ object BytecodeProtocol extends DefaultProtocol {
     }
   }
 
-  implicit object BytecodeFormat extends Format[TBCFile] {
+  implicit object BytecodeFormat extends Format[TBCFile[Instruction]] {
 
     def reads(in: Input) = {
 
@@ -293,12 +295,13 @@ object BytecodeProtocol extends DefaultProtocol {
       val modules = module_table.map {
         case (module_name, module_machines) =>
           val machines =
-            module_machines.foldRight(List[Machine]()) { (mac, list) =>
-              mac match {
-                case (MachineName(machine_name, params), index) =>
-                  Machine(machine_name, params, machine_table(index)) :: list
-                case _ => list
-              }
+            module_machines.foldRight(List[Machine[Instruction]]()) {
+              (mac, list) =>
+                mac match {
+                  case (MachineName(machine_name, params), index) =>
+                    Machine(machine_name, params, machine_table(index)) :: list
+                  case _ => list
+                }
             }
           Module(module_name, machines)
       }.toList
@@ -306,7 +309,7 @@ object BytecodeProtocol extends DefaultProtocol {
       TBCFile(version, modules)
     }
 
-    def writes(out: Output, file: TBCFile) {
+    def writes(out: Output, file: TBCFile[Instruction]) {
 
       // write first the magic number
       write(out, 0x2E544243)(U4Format)
@@ -350,10 +353,10 @@ object BytecodeProtocol extends DefaultProtocol {
 
   /** Loads the entire .tbc file */
   def loadTBCFile(file: File) =
-    fromFile[TBCFile](file)
+    fromFile[TBCFile[Instruction]](file)
 
   /** Writes the .tbc file */
-  def writeTBCFile(tbc: TBCFile, file: File) {
+  def writeTBCFile(tbc: TBCFile[Instruction], file: File) {
     toFile(tbc)(file)
   }
 

@@ -17,21 +17,21 @@
  *                                                                         *
  * *************************************************************************
  */
-package gnieh.turing.bytecode.v2
+package gnieh.turing.bytecode
 
 /**
  * @author Lucas Satabin
  *
  */
-case class TBCFile(version: String, modules: List[Module])
+case class TBCFile[Instr](version: String, modules: List[Module[Instr]])
 
 case class TBCInterface(version: String, modules: Map[String, List[String]])
 
-case class Module(name: String, machines: List[Machine])
+case class Module[Instr](name: String, machines: List[Machine[Instr]])
 
-case class Machine(name: String,
-                   paramTypes: List[Type],
-                   instructions: List[Instruction]) {
+case class Machine[Instr](name: String,
+                          paramTypes: List[Type],
+                          instructions: List[Instr]) {
 
   def nameString = name + paramTypes.mkString("(", "", ")")
 

@@ -35,118 +35,146 @@ import tree.worker.Traverser
  */
 class SymbolTableBuilder(implicit val reporter: Reporter) extends Traverser {
 
-  object currentOwner extends DynamicVariable[Symbol](TopLevel)
-  def owner_! = currentOwner.value
+  private object _currentScope extends DynamicVariable[Scope](TopLevel)
+  private def currentScope = _currentScope.value
 
-  var currentState: Option[StateSymbol] = None
+  private object _currentState extends DynamicVariable[Option[StateSymbol]](None)
+  private def currentState = _currentState.value
 
-  def withOwner(owner: Symbol)(block: => Unit) {
-    currentOwner.withValue(owner) {
+  def withScope(scope: Scope)(block: => Unit) {
+    _currentScope.withValue(scope) {
+      block
+    }
+  }
+
+  def withState(state: Option[StateSymbol])(block: => Unit) {
+    _currentState.withValue(state) {
       block
     }
   }
 
   override def traverse(node: Node) = node match {
     case CompilationUnit(Some(module), _, _) =>
-      // 
-      val sym = ModuleSymbol(module.name).setOwner(TopLevel)
+      // if the module is already defined, get it, otherwise, create it
+      val sym = TopLevel.lookupModule(module.name) match {
+        case Some(mod) => mod
+        case None =>
+          val mod = ModuleSymbol(module.name)(new Scope(Some(currentScope)))
+          // enter this new symbol into the parent scope
+          currentScope.enter(mod)
+          mod
+      }
       module.setSymbol(sym)
-      withOwner(sym) {
+      withScope(sym.scope) {
+        super.traverse(node)
+      }
+    case CompilationUnit(None, _, _) =>
+      // no module defined, set the default module scope
+      withScope(EmptyModuleSymbol.scope) {
         super.traverse(node)
       }
     case Machine(name, params, tapes, transitions, oracle) =>
-      // first build parameter symbol table
-      traverse(params)
+      // the new scope for this machine
+      val machineScope = new Scope(Some(currentScope))
+      // first build parameter symbol table, which are in the new scope
+      withScope(machineScope) {
+        traverse(params)
+      }
       // then create machine symbol
       val sym =
-        MachineSymbol(name.name, params.map(_.symbol), oracle)
-      // set this symbol as parameters owner
-      params.foreach(_.symbol.setOwner(sym))
+        MachineSymbol(name.name, params.map(_.symbol), oracle)(machineScope)
+      // enter the new symbol in the current scope
+      currentScope.enter(sym)
 
-      // sets the module as owner, if no module defined, 
-      // this is the default empty module
-      owner_! match {
-        case TopLevel =>
-          sym.setOwner(EmptyModuleSymbol)
-        case owner =>
-          sym.setOwner(owner)
-      }
       node.setSymbol(sym)
-      withOwner(sym) {
-        // then declared tapes
-        traverse(tapes)
-        // then transitions
-        traverse(transitions)
+
+      withState(None) {
+        withScope(machineScope) {
+          // then declared tapes
+          traverse(tapes)
+          // then transitions
+          traverse(transitions)
+        }
       }
-      // cleanup current state
-      currentState = None
     case Var(name, Some(tpe)) =>
       // variable with declared type
-      val sym = VariableSymbol(name.name, tpe)
+      val sym = VariableSymbol(name.name, tpe)(NoScope)
+      currentScope.enter(sym)
       node.setSymbol(sym)
-      sym.setOwner(owner_!)
+    case Var(name, None) =>
+      // variable with no declared type
+      val sym = ToInferSymbol(name.name)(NoScope)
+      currentScope.enter(sym)
+      node.setSymbol(sym)
     case Transition(Some(Named(name)), read, _, _) =>
       val state = currentState match {
         case None =>
           // new state defined
-          StateSymbol(name.name, Nil).setOwner(owner_!)
+          StateSymbol(name.name, Nil)(new Scope(Some(currentScope)))
         case Some(state) if name.name != state.name =>
           // new state defined
-          StateSymbol(name.name, Nil).setOwner(owner_!)
+          StateSymbol(name.name, Nil)(new Scope(Some(currentScope)))
         case Some(state) if name.name == state.name && state.params.nonEmpty =>
           // different parameter list, new state
-          StateSymbol(name.name, Nil).setOwner(owner_!)
+          StateSymbol(name.name, Nil)(new Scope(Some(currentScope)))
         case _ =>
           currentState.get
       }
-      currentState = Some(state)
+      currentScope.enter(state)
 
       // only the read part may declare some symbols in a transition
-      withOwner(state) {
-        traverse(read)
+      withState(currentState) {
+        withScope(state.scope) {
+          traverse(read)
+        }
       }
     case Transition(Some(Decl(name, params)), read, _, _) =>
+      // the scope of the new state
+      val newScope = new Scope(Some(currentScope))
+
       // traverse parameters first
-      traverse(params)
+      withScope(newScope) {
+        traverse(params)
+      }
 
       val paramSymbols = params.map(_.symbol)
 
       val state = currentState match {
         case None =>
           // new state defined
-          StateSymbol(name.name, paramSymbols).setOwner(owner_!)
+          StateSymbol(name.name, paramSymbols)(newScope)
         case Some(state) if name.name != state.name =>
           // new state defined
-          StateSymbol(name.name, paramSymbols).setOwner(owner_!)
+          StateSymbol(name.name, paramSymbols)(newScope)
         case Some(state) if name.name == state.name
           && paramSymbols != state.params =>
           // different parameter list, new state
-          StateSymbol(name.name, paramSymbols).setOwner(owner_!)
+          StateSymbol(name.name, paramSymbols)(newScope)
         case _ =>
           currentState.get
       }
-      currentState = Some(state)
-
-      // set this symbol as parameters owner
-      params.foreach(_.symbol.setOwner(state))
 
       // only the read part may declare some symbols in a transition
-      withOwner(state) {
-        traverse(read)
+      withState(Some(state)) {
+        withScope(state.scope) {
+          traverse(read)
+        }
       }
     case Transition(None, read, _, _) =>
       // no initial state given...
       currentState match {
         case Some(state) =>
-          withOwner(state) {
+          withScope(state.scope) {
             traverse(read)
           }
         case None =>
           // set the synthetic first state for this machine
-          val state = SyntheticState(owner_!)
-          currentState = Some(state)
-          withOwner(state) {
-            traverse(read)
+          val state = SyntheticState.newState(new Scope(Some(currentScope)))
+          currentScope.enter(state)
+          withState(Some(state)) {
+            withScope(state.scope) {
+              traverse(read)
+            }
           }
       }
     case _ =>

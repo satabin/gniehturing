@@ -20,6 +20,8 @@
 package gnieh.turing
 package compiler
 
+import symbol.TopLevel
+import util.Reporter
 import bytecode.BytecodeIO
 
 /**
@@ -29,11 +31,46 @@ import bytecode.BytecodeIO
  * @author Lucas Satabin
  *
  */
-class Resolver(val options: Options) {
+class LibResolver(val options: Options)(implicit val reporter: Reporter) {
 
-  options.bcVersion match {
+  private val bytecodeIO = options.bcVersion match {
     case "2.1" =>
+      BytecodeIO.forInstrType[bytecode.v2.Instruction]
     case version =>
+      reporter.warning("Unknwon bytecode version " + version +
+        ". Using 2.1 instead")
+      BytecodeIO.forInstrType[bytecode.v2.Instruction]
+  }
+
+  /* adds the module and machines defined in it to the top-level scope */
+  private def loadModule(module: Map[String, List[String]]) {
+
+  }
+
+  bytecodeIO match {
+    case Some(io) =>
+
+      // first load the .tbc files in the given path
+      options.path.foreach { file =>
+        if (file.isDirectory) {
+          // if it is a directory, recursively search for ".tbc" files
+        } else if (file.getName.endsWith(".tbc")) {
+          // this is a .tbc file, load it
+          val itf = io.loadTBCInterface(file)
+          itf.modules.foreach { module =>
+            // add each module
+          }
+        } else {
+          // it is neither a directory, nor a .tbc file, ignore it
+          reporter.warning(file.getName +
+            " is neither a directory, nor a .tbc file and is ignored in machine path")
+        }
+      }
+
+    case None =>
+      // ooootch, what happened there??? this should *NEVER* happen
+      reporter.warning("No bytecode reader was found for version " +
+        options.bcVersion + ". No library will be linked")
   }
 
 }

@@ -43,5 +43,5 @@ case object TModule extends Type {
   override def toString = "module"
 }
 case object TUnknown extends Type {
-  override def toString = "unknown"
+  override def toString = "?"
 }

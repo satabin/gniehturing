@@ -35,6 +35,21 @@ trait Reporter {
   def debug(msg: String) =
     report(msg, Debug)
 
+  def info(msg: String) =
+    report(msg, Info)
+
+  def warning(msg: String) =
+    report(msg, Warning)
+
+  def warning(msg: String, exc: Exception) =
+    report(msg, exc, Warning)
+
+  def error(msg: String) =
+    report(msg, Error)
+
+  def error(msg: String, exc: Exception) =
+    report(msg, exc, Error)
+
   def hasErrors_? : Boolean
   def hasWarnings_? : Boolean
 

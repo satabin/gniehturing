@@ -17,18 +17,15 @@
  *                                                                         *
  * *************************************************************************
  */
-package gnieh.turing
+package gnieh.turing.compiler
 
 /**
  * @author Lucas Satabin
  *
  */
-package object symbol {
+class CompilerException(msg: String, inner: Throwable)
+    extends Exception(msg, inner) {
 
-  lazy val EmptyModuleSymbol = {
-    val mod = ModuleSymbol("<empty>")(new Scope(Some(TopLevel)))
-    TopLevel.enter(mod)
-    mod
-  }
+  def this(msg: String) = this(msg, null)
 
 }

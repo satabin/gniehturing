@@ -27,72 +27,32 @@ import scala.collection.mutable.Map
  * @author Lucas Satabin
  *
  */
-abstract class Symbol(val name: String, val tpe: Type) {
-
-  private[this] var _owner: Option[Symbol] = None
-
-  private[Symbol] val children = Map.empty[String, Map[List[Symbol], Symbol]]
-
-  def owner = _owner
-  def owner_=(sym: Option[Symbol]) = _owner = sym
-
-  /** Enters a new symbol to the symbol table of this symbol */
-  def enter(sym: Symbol) {
-    children(sym.name)(sym.params) = sym
-  }
-
-  def remove(sym: Symbol) {
-    children.get(sym.name) match {
-      case Some(map) =>
-        map -= sym.params
-        if (map.isEmpty)
-          children -= sym.name
-      case None => // do nothing
-    }
-  }
-
-  def setOwner(sym: Symbol): this.type = {
-    // dereference from old owner children if any
-    owner match {
-      case Some(s) =>
-        s.remove(this)
-      case None => // nothing to do
-    }
-    // set new owner
-    _owner = Option(sym)
-    // reference as child from new owner
-    sym.enter(this)
-    this
-  }
+abstract class Symbol(val name: String, val tpe: Type, val scope: Scope) {
 
   /** Returns the list of params for this symbol if any*/
   def params: List[Symbol]
 
-  def lookup(name: String, tpe: Option[Type] = None): List[Symbol] = {
-    val inChildren = children.get(name) match {
-      case Some(sym) =>
-        sym.values.toList
-      case None => Nil
-    }
-    if (name == name)
-      this :: inChildren
-    else owner match {
-      case Some(o) => o.lookup(name) ::: inChildren
-      case None => inChildren
-    }
-  }
-
 }
 
+/** A symbol that may be called as next parameter, either a machine or a state */
+trait CallableSymbol extends Symbol
+
+/** A variable may be either a char or a tape */
 case class VariableSymbol(override val name: String,
-                          override val tpe: Type)
-    extends Symbol(name, tpe) {
+                          override val tpe: Type)(scope: Scope)
+    extends Symbol(name, tpe, scope) {
   val params = Nil
+
+  override def toString = name + ": " + tpe
 }
 
 case class StateSymbol(override val name: String,
-                       val params: List[Symbol])
-    extends Symbol(name, TState) {
+                       val params: List[Symbol])(scope: Scope)
+    extends Symbol(name, TState, scope)
+    with CallableSymbol {
+
+  override def toString =
+    name + params.mkString("(", ", ", "): state")
 
 }
 
@@ -100,8 +60,8 @@ object SyntheticState {
 
   var ind = 0
 
-  def apply(owner: Symbol) = {
-    val res = StateSymbol("synthetic$state$" + ind, Nil).setOwner(owner)
+  def newState(scope: Scope) = {
+    val res = StateSymbol("synthetic$state$" + ind, Nil)(scope)
     ind += 1
     res
   }
@@ -109,24 +69,35 @@ object SyntheticState {
 
 case class MachineSymbol(override val name: String,
                          val params: List[Symbol],
-                         orcale: Boolean)
-    extends Symbol(name, TMachine(params.map(_.tpe)))
+                         oracle: Boolean)(scope: Scope)
+    extends Symbol(name, TMachine(params.map(_.tpe)), scope)
+    with CallableSymbol {
 
-case class ModuleSymbol(override val name: String)
-    extends Symbol(name, TModule) {
-  val params = Nil
+  override def toString =
+    (if (oracle) "<oracle>" else "") + name +
+      params.mkString("(", ", ", "): machine")
+
 }
 
-case class ToInferSymbol(override val name: String)
-    extends Symbol(name, TUnknown) {
+case class ModuleSymbol(override val name: String)(scope: Scope)
+    extends Symbol(name, TModule, scope) {
   val params = Nil
+
+  override def toString = name + ": module"
+
 }
 
-case object NoSymbol extends Symbol("no-name", TUnknown) {
+case class ToInferSymbol(override val name: String)(scope: Scope)
+    extends Symbol(name, TUnknown, scope) {
   val params = Nil
+
+  override def toString = name + ": ?"
+
 }
 
-/** The top-level symbol contains all the modules */
-case object TopLevel extends Symbol("top-level", TUnknown) {
+case object NoSymbol extends Symbol("no-name", TUnknown, NoScope) {
   val params = Nil
+
+  override def toString = name + ": ?"
+
 }

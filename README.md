@@ -36,20 +36,26 @@ The project is divided in different modules as follows:
 - **parent/**: contains the parent project used to compile/build/release the entire toolchain,
 - **compiler/**: contains the compiler,
 - **vm/**: contains the virtual machine,
-- **bytecode**: contains a library used for reading/writing bytecode (used by both compiler and virtual machine),
+- **bytecode/**: contains a library used for reading/writing bytecode (used by both compiler and virtual machine),
 - **util/**: contains some utility classes possibly used by all the other modules.
 
 Building GniehTuring
 --------------------
 
 Clone the project with
+
 ``git clone git://github.com/gnieh/gniehturing.git``
 
 GniehTuring is built using [Apache Maven](http://maven.apache.org/). 
+
 To build GniehTuring, go to the _parent_ module and run:
+
 ``mvn package``
+
 This will build the project, test it and package it.
+
 To build a specific component, go to the component directory and run
+
 ``mvn package``
 
 License

@@ -6,9 +6,30 @@
 	<version>3.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>GniehTuring parent project</name>
+	<licenses>
+		<license>
+			<name>GPL v3</name>
+			<url>http://www.gnu.org/licenses/gpl-3.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 	<modules>
 		<module>../bytecode</module>
 		<module>../compiler</module>
 		<module>../util</module>
 	</modules>
+	<properties>
+		<maven.compiler.source>1.5</maven.compiler.source>
+		<maven.compiler.target>1.5</maven.compiler.target>
+		<encoding>UTF-8</encoding>
+		<scala.version>2.9.2</scala.version>
+	</properties>
+	<url>https://github.com/gnieh/gniehturing</url>
+	<description>A complete Turing machine toolchain.</description>
+	<inceptionYear>2012</inceptionYear>
+	<scm>
+		<url>https://github.com/gnieh/gniehturing</url>
+		<connection>scm:git:git://github.com/gnieh/gniehturing.git</connection>
+		<developerConnection>scm:git:git@github.com:gnieh/gniehturing.git</developerConnection>
+	</scm>
 </project>

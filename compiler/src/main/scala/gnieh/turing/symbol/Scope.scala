@@ -21,8 +21,9 @@ package gnieh.turing
 package symbol
 
 import tree.Type
-import scala.collection.mutable.Map
 import compiler.CompilerException
+
+import scala.collection.mutable.Map
 
 /**
  * @author Lucas Satabin
@@ -37,14 +38,31 @@ class Scope(parent: Option[Scope] = None) {
   def enter(sym: Symbol) {
     val name = sym.name
     val params = sym.params.map(_.tpe)
-    symbols.get(name).flatMap(_.get(Nil)) match {
+    lookupInThis(name, params) match {
       case Some(found) if found.tpe == sym.tpe =>
         // it already exists in this scope
-        throw new CompilerException(found + " already exists in scope")
+        throw new CompilerException(found + " already exists in current scope")
       case _ =>
         // enter it
         val byName = symbols.getOrElseUpdate(name, Map.empty[List[Type], Symbol])
         byName(params) = sym
+    }
+  }
+
+  /** Deletes the given symbol from this scope if it is defined in it */
+  def delete(sym: Symbol) {
+    val name = sym.name
+    val params = sym.params.map(_.tpe)
+    lookupInThis(name, params) match {
+      case Some(_) =>
+        // found, delete it
+        symbols(name).remove(params)
+        if (symbols(name).isEmpty) {
+          // that was the only symbol with this name, remove it
+          symbols.remove(name)
+        }
+      case None =>
+      // not found, just ignore
     }
   }
 
@@ -112,7 +130,7 @@ class Scope(parent: Option[Scope] = None) {
     }
 
   override def toString =
-    "Scope {\n" + symbols.mkString("  ", "\n  ", "\n") + "}"
+    "Scope {\n" + symbols.values.flatMap(_.values).mkString("  ", "\n  ", "\n") + "}"
 
   // helper methods
 

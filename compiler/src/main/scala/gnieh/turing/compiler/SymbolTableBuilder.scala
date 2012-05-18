@@ -35,13 +35,13 @@ import tree.worker.Traverser
  */
 class SymbolTableBuilder(reporter: Reporter) extends Traverser {
 
-  object currentOwner extends DynamicVariable[Option[Symbol]](None)
-  def owner_! = currentOwner.value.get
+  object currentOwner extends DynamicVariable[Symbol](TopLevel)
+  def owner_! = currentOwner.value
 
   var currentState: Option[StateSymbol] = None
 
   def withOwner(owner: Symbol)(block: => Unit) {
-    currentOwner.withValue(Option(owner)) {
+    currentOwner.withValue(owner) {
       block
     }
   }
@@ -49,7 +49,7 @@ class SymbolTableBuilder(reporter: Reporter) extends Traverser {
   override def traverse(node: Node) = node match {
     case CompilationUnit(Some(module), _, _) =>
       // 
-      val sym = ModuleSymbol(module.name)
+      val sym = ModuleSymbol(module.name).setOwner(TopLevel)
       module.setSymbol(sym)
       withOwner(sym) {
         super.traverse(node)
@@ -65,7 +65,12 @@ class SymbolTableBuilder(reporter: Reporter) extends Traverser {
 
       // sets the module as owner, if no module defined, 
       // this is the default empty module
-      sym.setOwner(currentOwner.value.getOrElse(EmptyModuleSymbol))
+      owner_! match {
+        case TopLevel =>
+          sym.setOwner(EmptyModuleSymbol)
+        case owner =>
+          sym.setOwner(owner)
+      }
       node.setSymbol(sym)
       withOwner(sym) {
         // then declared tapes

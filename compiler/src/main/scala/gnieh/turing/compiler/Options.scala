@@ -17,14 +17,16 @@
  *                                                                         *
  * *************************************************************************
  */
-package gnieh.turing
+package gnieh.turing.compiler
+
+import java.io.File
 
 /**
  * @author Lucas Satabin
  *
  */
-package object symbol {
-
-  lazy val EmptyModuleSymbol = ModuleSymbol("<empty>").setOwner(TopLevel)
-
-}
+case class Options(files: List[File] = Nil,
+                   path: List[File] = Nil,
+                   verbose: Boolean = false,
+                   bcVersion: String = "v2.1",
+                   staticallyLinked: Boolean = false)

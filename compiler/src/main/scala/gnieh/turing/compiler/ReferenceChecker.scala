@@ -18,13 +18,27 @@
  * *************************************************************************
  */
 package gnieh.turing
+package compiler
+
+import scala.util.DynamicVariable
+
+import symbol._
+import util._
+import tree._
+import tree.worker.Traverser
 
 /**
+ * This checks that referenced names are defined and of the correct type
+ *
  * @author Lucas Satabin
  *
  */
-package object symbol {
+class ReferenceChecker(reporter: Reporter) extends Traverser {
 
-  lazy val EmptyModuleSymbol = ModuleSymbol("<empty>").setOwner(TopLevel)
+  override def traverse(node: Node) = node match {
+    case _ =>
+      // just delegate to super method
+      super.traverse(node)
+  }
 
 }

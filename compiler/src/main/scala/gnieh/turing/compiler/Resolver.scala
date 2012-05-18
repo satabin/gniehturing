@@ -17,14 +17,15 @@
  *                                                                         *
  * *************************************************************************
  */
-package gnieh.turing
+package gnieh.turing.compiler
 
 /**
+ * A resolver allows to resolve all modules and machines that are given
+ * as libraries when compiling and add them to the symbol table.
+ *
  * @author Lucas Satabin
  *
  */
-package object symbol {
-
-  lazy val EmptyModuleSymbol = ModuleSymbol("<empty>").setOwner(TopLevel)
+class Resolver {
 
 }

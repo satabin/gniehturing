@@ -31,34 +31,54 @@ abstract class Symbol(val name: String, val tpe: Type) {
 
   private[this] var _owner: Option[Symbol] = None
 
-  //  private[Symbol] val children = Map.empty[(String, List[Symbol]), Symbol]
+  private[Symbol] val children = Map.empty[String, Map[List[Symbol], Symbol]]
 
   def owner = _owner
   def owner_=(sym: Option[Symbol]) = _owner = sym
 
+  /** Enters a new symbol to the symbol table of this symbol */
+  def enter(sym: Symbol) {
+    children(sym.name)(sym.params) = sym
+  }
+
+  def remove(sym: Symbol) {
+    children.get(sym.name) match {
+      case Some(map) =>
+        map -= sym.params
+        if (map.isEmpty)
+          children -= sym.name
+      case None => // do nothing
+    }
+  }
+
   def setOwner(sym: Symbol): this.type = {
     // dereference from old owner children if any
-    //    owner match {
-    //      case Some(s) =>
-    //        s.children -= this
-    //      case None => // nothing to do
-    //    }
+    owner match {
+      case Some(s) =>
+        s.remove(this)
+      case None => // nothing to do
+    }
     // set new owner
     _owner = Option(sym)
     // reference as child from new owner
-    //    sym.children += this
+    sym.enter(this)
     this
   }
 
   /** Returns the list of params for this symbol if any*/
   def params: List[Symbol]
 
-  def lookup(sym: String): List[Symbol] = {
-    if (sym == name)
-      List(this)
-    else owner match {
-      case Some(o) => o.lookup(sym)
+  def lookup(name: String, tpe: Option[Type] = None): List[Symbol] = {
+    val inChildren = children.get(name) match {
+      case Some(sym) =>
+        sym.values.toList
       case None => Nil
+    }
+    if (name == name)
+      this :: inChildren
+    else owner match {
+      case Some(o) => o.lookup(name) ::: inChildren
+      case None => inChildren
     }
   }
 
@@ -103,5 +123,10 @@ case class ToInferSymbol(override val name: String)
 }
 
 case object NoSymbol extends Symbol("no-name", TUnknown) {
+  val params = Nil
+}
+
+/** The top-level symbol contains all the modules */
+case object TopLevel extends Symbol("top-level", TUnknown) {
   val params = Nil
 }

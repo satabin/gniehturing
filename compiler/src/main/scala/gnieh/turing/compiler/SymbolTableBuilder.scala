@@ -74,13 +74,13 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
 
         node.setSymbol(sym)
 
-        withState(None) {
-          withScope(machineScope) {
-            // then declared tapes
-            traverse(tapes)
-            // then transitions
-            traverse(transitions)
-          }
+        // re-initialize current state
+        currentState = None
+        withScope(machineScope) {
+          // then declared tapes
+          traverse(tapes)
+          // then transitions
+          traverse(transitions)
         }
       case Var(name, Some(tpe)) =>
         // variable with declared type
@@ -92,29 +92,38 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
         val sym = ToInferSymbol(name.name)(NoScope)
         currentScope.enter(sym)
         node.setSymbol(sym)
-      case Transition(Some(Named(name)), read, _, _) =>
+      case Transition(Some(named @ Named(name)), read, _, _) =>
         val state = currentState match {
           case None =>
             // new state defined
-            StateSymbol(name.name, Nil)(new Scope(currentScope))
+            val s = StateSymbol(name.name, Nil)(new Scope(currentScope))
+            // enter the new state in the symbol table
+            currentScope.enter(s)
+            s
           case Some(state) if name.name != state.name =>
             // new state defined
-            StateSymbol(name.name, Nil)(new Scope(currentScope))
+            val s = StateSymbol(name.name, Nil)(new Scope(currentScope))
+            // enter the new state in the symbol table
+            currentScope.enter(s)
+            s
           case Some(state) if name.name == state.name && state.params.nonEmpty =>
             // different parameter list, new state
-            StateSymbol(name.name, Nil)(new Scope(currentScope))
+            val s = StateSymbol(name.name, Nil)(new Scope(currentScope))
+            // enter the new state in the symbol table
+            currentScope.enter(s)
+            s
           case _ =>
             currentState.get
         }
-        currentScope.enter(state)
+        // the symbol is the state symbol
+        named.symbol = state
 
         // only the read part may declare some symbols in a transition
-        withState(currentState) {
-          withScope(state.scope) {
-            traverse(read)
-          }
+        currentState = Some(state)
+        withScope(state.scope) {
+          traverse(read)
         }
-      case Transition(Some(Decl(name, params)), read, _, _) =>
+      case Transition(Some(decl @ Decl(name, params)), read, _, _) =>
         // the scope of the new state
         val newScope = new Scope(currentScope)
 
@@ -128,23 +137,33 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
         val state = currentState match {
           case None =>
             // new state defined
-            StateSymbol(name.name, paramSymbols)(newScope)
+            val s = StateSymbol(name.name, paramSymbols)(newScope)
+            // enter the new state in the symbol table
+            currentScope.enter(s)
+            s
           case Some(state) if name.name != state.name =>
             // new state defined
-            StateSymbol(name.name, paramSymbols)(newScope)
+            val s = StateSymbol(name.name, paramSymbols)(newScope)
+            // enter the new state in the symbol table
+            currentScope.enter(s)
+            s
           case Some(state) if name.name == state.name
             && paramSymbols != state.params =>
             // different parameter list, new state
-            StateSymbol(name.name, paramSymbols)(newScope)
+            val s = StateSymbol(name.name, paramSymbols)(newScope)
+            // enter the new state in the symbol table
+            currentScope.enter(s)
+            s
           case _ =>
             currentState.get
         }
+        // the symbol is the state symbol
+        decl.symbol = state
 
         // only the read part may declare some symbols in a transition
-        withState(Some(state)) {
-          withScope(state.scope) {
-            traverse(read)
-          }
+        currentState = Some(state)
+        withScope(state.scope) {
+          traverse(read)
         }
       case Transition(None, read, _, _) =>
         // no initial state given...
@@ -157,10 +176,9 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
             // set the synthetic first state for this machine
             val state = SyntheticState.newState(new Scope(currentScope))
             currentScope.enter(state)
-            withState(Some(state)) {
-              withScope(state.scope) {
-                traverse(read)
-              }
+            currentState = Some(state)
+            withScope(state.scope) {
+              traverse(read)
             }
         }
       case _ =>

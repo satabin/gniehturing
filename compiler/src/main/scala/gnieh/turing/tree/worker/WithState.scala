@@ -29,13 +29,6 @@ import scala.util.DynamicVariable
  */
 trait WithState {
 
-  protected[this] object _currentState extends DynamicVariable[Option[StateSymbol]](None)
-  protected[this] def currentState = _currentState.value
-
-  protected[this] def withState(state: Option[StateSymbol])(block: => Unit) {
-    _currentState.withValue(state) {
-      block
-    }
-  }
+  protected[this] var currentState: Option[StateSymbol] = None
 
 }

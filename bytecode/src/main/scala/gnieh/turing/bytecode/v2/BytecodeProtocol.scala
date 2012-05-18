@@ -267,7 +267,10 @@ object BytecodeProtocol
 
       val modules = module_table.map {
         case (module_name, machines) =>
-          (module_name, machines.map(_._1))
+          (module_name, machines.map {
+            case (MachineName(machine_name, machine_params), _) =>
+              (machine_name, machine_params)
+          })
       }.toMap
 
       TBCInterface(version, modules)

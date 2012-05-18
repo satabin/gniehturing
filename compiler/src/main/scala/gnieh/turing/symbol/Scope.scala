@@ -66,6 +66,10 @@ class Scope(parent: Option[Scope] = None) {
     }
   }
 
+  /** indicates whether this scope contains the given symbol */
+  def contains(sym: Symbol) =
+    lookupInThis(sym.name, sym.params.map(_.tpe)).isDefined
+
   def lookupVar(name: String, tpe: Option[Type] = None): Option[VariableSymbol] =
     (lookupInThis(name, Nil), tpe) match {
       case (Some(sym: VariableSymbol), Some(tpe)) if sym.tpe == tpe =>

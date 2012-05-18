@@ -60,11 +60,19 @@ object GniehTuringC extends App {
 
   optionsParser.parse(args, Options()) match {
     case Some(options) =>
+      import options._
       implicit val reporter = new ConsoleReporter with CountingReporter
 
       // parses the files
       val parser = new TMDLFileParser(options.files)
       val units = parser.parseAllFiles
+
+      // load the linked libraries
+      if (verbose)
+        reporter.info("Loading linked libraries from "
+          + path.mkString(File.pathSeparator))
+      val libloader = new LibLoader(options)
+      libloader.load
 
       // the different passes as runners
       val runners =

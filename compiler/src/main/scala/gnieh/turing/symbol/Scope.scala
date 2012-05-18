@@ -31,6 +31,8 @@ import scala.collection.mutable.Map
  */
 class Scope(parent: Option[Scope] = None) {
 
+  def this(scope: Scope) = this(Some(scope))
+
   // the symbols defined in this scope, can be search by name and argument types
   private[this] var symbols = Map.empty[String, Map[List[Type], Symbol]]
 

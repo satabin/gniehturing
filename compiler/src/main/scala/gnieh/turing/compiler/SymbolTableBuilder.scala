@@ -45,7 +45,7 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
         val sym = TopLevel.lookupModule(module.name) match {
           case Some(mod) => mod
           case None =>
-            val mod = ModuleSymbol(module.name)(new Scope(Some(currentScope)))
+            val mod = ModuleSymbol(module.name)(new Scope(currentScope))
             // enter this new symbol into the parent scope
             currentScope.enter(mod)
             mod
@@ -61,7 +61,7 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
         }
       case Machine(name, params, tapes, transitions, oracle) =>
         // the new scope for this machine
-        val machineScope = new Scope(Some(currentScope))
+        val machineScope = new Scope(currentScope)
         // first build parameter symbol table, which are in the new scope
         withScope(machineScope) {
           traverse(params)
@@ -96,13 +96,13 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
         val state = currentState match {
           case None =>
             // new state defined
-            StateSymbol(name.name, Nil)(new Scope(Some(currentScope)))
+            StateSymbol(name.name, Nil)(new Scope(currentScope))
           case Some(state) if name.name != state.name =>
             // new state defined
-            StateSymbol(name.name, Nil)(new Scope(Some(currentScope)))
+            StateSymbol(name.name, Nil)(new Scope(currentScope))
           case Some(state) if name.name == state.name && state.params.nonEmpty =>
             // different parameter list, new state
-            StateSymbol(name.name, Nil)(new Scope(Some(currentScope)))
+            StateSymbol(name.name, Nil)(new Scope(currentScope))
           case _ =>
             currentState.get
         }
@@ -116,7 +116,7 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
         }
       case Transition(Some(Decl(name, params)), read, _, _) =>
         // the scope of the new state
-        val newScope = new Scope(Some(currentScope))
+        val newScope = new Scope(currentScope)
 
         // traverse parameters first
         withScope(newScope) {
@@ -155,7 +155,7 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
             }
           case None =>
             // set the synthetic first state for this machine
-            val state = SyntheticState.newState(new Scope(Some(currentScope)))
+            val state = SyntheticState.newState(new Scope(currentScope))
             currentScope.enter(state)
             withState(Some(state)) {
               withScope(state.scope) {

@@ -33,7 +33,7 @@ import tree.worker.Traverser
  * @author Lucas Satabin
  *
  */
-class SymbolTableBuilder(reporter: Reporter) extends Traverser {
+class SymbolTableBuilder(implicit val reporter: Reporter) extends Traverser {
 
   object currentOwner extends DynamicVariable[Symbol](TopLevel)
   def owner_! = currentOwner.value

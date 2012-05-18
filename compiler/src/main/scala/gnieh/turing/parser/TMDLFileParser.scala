@@ -32,7 +32,7 @@ import tree.CompilationUnit
  * @author Lucas Satabin
  *
  */
-class TMDLFileParser(val inputFiles: List[File], reporter: Reporter) {
+class TMDLFileParser(val inputFiles: List[File])(implicit val reporter: Reporter) {
 
   /** Parses the input file and returns the parsed compilation unit */
   private def parse(file: File) = {

@@ -30,10 +30,10 @@ import tree.worker._
  */
 object Runner {
 
-  def apply(reporter: Reporter, traverser: Traverser) =
+  def apply(traverser: Traverser)(implicit reporter: Reporter) =
     new TraverserRunner(reporter, traverser)
 
-  def apply(reporter: Reporter, transformer: ConservativeTransformer) =
+  def apply(transformer: ConservativeTransformer)(implicit reporter: Reporter) =
     new ConservativeTransformerRunner(reporter, transformer)
 
 }

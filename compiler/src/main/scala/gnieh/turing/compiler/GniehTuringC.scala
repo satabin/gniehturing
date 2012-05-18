@@ -60,17 +60,17 @@ object GniehTuringC extends App {
 
   optionsParser.parse(args, Options()) match {
     case Some(options) =>
-      val reporter = new ConsoleReporter with CountingReporter
+      implicit val reporter = new ConsoleReporter with CountingReporter
 
       // parses the files
-      val parser = new TMDLFileParser(options.files, reporter)
+      val parser = new TMDLFileParser(options.files)
       val units = parser.parseAllFiles
 
       // the different passes as runners
       val runners =
-        Runner(reporter, new SymbolTableBuilder(reporter)) andThen
+        Runner(new SymbolTableBuilder) andThen
           // TODO type inference
-          Runner(reporter, new ReferenceChecker(reporter))
+          Runner(new ReferenceChecker)
 
       // let's go and do the job!
       runners.run(units)

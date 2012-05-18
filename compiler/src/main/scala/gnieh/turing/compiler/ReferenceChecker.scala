@@ -33,7 +33,7 @@ import tree.worker.Traverser
  * @author Lucas Satabin
  *
  */
-class ReferenceChecker(reporter: Reporter) extends Traverser {
+class ReferenceChecker(implicit val reporter: Reporter) extends Traverser {
 
   override def traverse(node: Node) = node match {
     case _ =>

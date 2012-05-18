@@ -17,15 +17,23 @@
  *                                                                         *
  * *************************************************************************
  */
-package gnieh.turing.compiler
+package gnieh.turing
+package compiler
+
+import bytecode.BytecodeIO
 
 /**
- * A resolver allows to resolve all modules and machines that are given
+ * A resolver allows the user to resolve all modules and machines that are given
  * as libraries when compiling and add them to the symbol table.
  *
  * @author Lucas Satabin
  *
  */
-class Resolver {
+class Resolver(val options: Options) {
+
+  options.bcVersion match {
+    case "2.1" =>
+    case version =>
+  }
 
 }

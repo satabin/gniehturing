@@ -26,25 +26,65 @@ import java.io._
  *
  */
 trait Reporter {
-  def report(msg: String, level: Level)
+
+  def report(msg: String, exc: Exception, level: Level)
+
+  def report(msg: String, level: Level): Unit =
+    report(msg, null, level)
+
+  def debug(msg: String) =
+    report(msg, Debug)
+
+  def hasErrors_? : Boolean
+  def hasWarnings_? : Boolean
+
   /** Closes the reporter when the user is done with it */
   def close() { /* override if some close action is needed */ }
 }
 
-class ConsoleReporter extends Reporter {
+trait CountingReporter extends Reporter {
 
-  def report(msg: String, level: Level) {
+  private[this] var errorNb = 0
+  private[this] var warningNb = 0
+
+  abstract override def report(msg: String, exc: Exception, level: Level) {
+    level match {
+      case Error => errorNb += 1
+      case Warning => warningNb += 1
+      case _ => // nothing
+    }
+    super.report(msg, exc, level)
+  }
+
+  def errors = errorNb
+
+  def hasErrors_? = errorNb > 0
+  def hasWarnings_? = warningNb > 0
+
+}
+
+abstract class AccumulatingReporter extends Reporter {
+
+}
+
+abstract class ConsoleReporter extends Reporter {
+
+  def report(msg: String, exception: Exception, level: Level) {
     println("[" + level + "] " + msg)
+    if (exception != null)
+      println(exception.getStackTraceString)
   }
 
 }
 
-class FileReporter(fileName: String, append: Boolean = false) extends Reporter {
+abstract class FileReporter(fileName: String, append: Boolean = false) extends Reporter {
 
   val writer = new FileWriter(new File(fileName), append)
 
-  def report(msg: String, level: Level) {
-    writer.write("[" + level + "] " + msg)
+  def report(msg: String, exception: Exception, level: Level) {
+    writer.write("[" + level + "] " + msg + "\n")
+    if (exception != null)
+      writer.write(exception.getStackTraceString + "\n")
     writer.flush
   }
 

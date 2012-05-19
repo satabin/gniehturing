@@ -34,6 +34,8 @@ import gnieh.turing.tree._
  */
 object GTuringParser extends RegexParsers {
 
+  override val whiteSpace = """(\s|#.*)+""".r
+
   /**
    * Parses a compilation unit
    * <unit> ::= <module>? <use>* <machine>*

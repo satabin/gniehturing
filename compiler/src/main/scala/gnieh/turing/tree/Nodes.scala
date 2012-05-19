@@ -32,7 +32,7 @@ import scala.util.parsing.input.{ Position, Positional }
  */
 sealed abstract class Node extends Positional {
   var symbol: Symbol = NoSymbol
-  def setSymbol(sym: Symbol) = {
+  def setSymbol(sym: Symbol): this.type = {
     symbol = sym
     this
   }
@@ -220,7 +220,12 @@ final case class WriteVar(tape: Option[Ident], name: Ident) extends Action {
     tap + "write " + name
   }
 }
-final case class Left(tape: Option[Ident], offset: Int) extends Action {
+
+trait Move extends Action {
+  val tape: Option[Ident]
+  val offset: Int
+}
+final case class Left(tape: Option[Ident], offset: Int) extends Move {
   override def toString = {
     val tap = tape match {
       case Some(t) => t + "."
@@ -229,7 +234,7 @@ final case class Left(tape: Option[Ident], offset: Int) extends Action {
     tap + "left " + offset
   }
 }
-final case class Right(tape: Option[Ident], offset: Int) extends Action {
+final case class Right(tape: Option[Ident], offset: Int) extends Move {
   override def toString = {
     val tap = tape match {
       case Some(t) => t + "."

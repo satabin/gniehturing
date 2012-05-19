@@ -26,7 +26,9 @@ import java.io.File
  *
  */
 case class Options(files: List[File] = Nil,
+                   outFile: File = new File("out.tbc"),
                    path: List[File] = Nil,
                    verbose: Boolean = false,
                    bcVersion: String = "2.1",
-                   staticallyLinked: Boolean = false)
+                   staticallyLinked: Boolean = false,
+                   generateOutput: Boolean = false)

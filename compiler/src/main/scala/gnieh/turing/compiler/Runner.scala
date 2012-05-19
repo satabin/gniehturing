@@ -30,24 +30,27 @@ import tree.worker._
  */
 object Runner {
 
-  def apply(traverser: Traverser)(implicit reporter: Reporter) =
-    new TraverserRunner(reporter, traverser)
+  def apply(name: String, traverser: Traverser, verbose: Boolean)(implicit reporter: Reporter) =
+    new TraverserRunner(name, reporter, traverser, verbose)
 
-  def apply(transformer: ConservativeTransformer)(implicit reporter: Reporter) =
-    new ConservativeTransformerRunner(reporter, transformer)
+  def apply(name: String, transformer: ConservativeTransformer, verbose: Boolean)(implicit reporter: Reporter) =
+    new ConservativeTransformerRunner(name, reporter, transformer, verbose)
 
 }
 
-sealed abstract class Runner(reporter: Reporter) {
+sealed abstract class Runner(val name: String,
+                             val reporter: Reporter,
+                             val verbose: Boolean) {
 
   self =>
 
   type CompilationUnits = List[CompilationUnit]
 
   def andThen[T](next: Runner) =
-    new Runner(reporter) {
+    new Runner(self.name, reporter, self.verbose) {
       def run(unit: CompilationUnit) = self.run(unit)
       override def run(units: CompilationUnits) = {
+
         val res = super.run(units)
 
         if (!self.reporter.hasErrors_?)
@@ -66,22 +69,40 @@ sealed abstract class Runner(reporter: Reporter) {
 
 }
 
-final class TraverserRunner(reporter: Reporter,
-                            traverser: Traverser)
-    extends Runner(reporter) {
+final class TraverserRunner(name: String,
+                            reporter: Reporter,
+                            traverser: Traverser,
+                            verbose: Boolean)
+    extends Runner(name, reporter, verbose) {
 
   def run(unit: CompilationUnit) = {
+    if (verbose)
+      reporter.info("Running phase " + name)
     traverser.traverse(unit)
+    if (verbose)
+      reporter.info("Phase " + name + " ran with " +
+        (if (reporter.hasErrors_?) "error(s)" else "no errors"))
+
     unit
   }
 
 }
 
-final class ConservativeTransformerRunner(reporter: Reporter,
-                                          transformer: ConservativeTransformer)
-    extends Runner(reporter) {
+final class ConservativeTransformerRunner(name: String,
+                                          reporter: Reporter,
+                                          transformer: ConservativeTransformer,
+                                          verbose: Boolean)
+    extends Runner(name, reporter, verbose) {
 
-  def run(unit: CompilationUnit) =
-    transformer.transform(unit).asInstanceOf[CompilationUnit]
+  def run(unit: CompilationUnit) = {
+    if (verbose)
+      reporter.info("Running phase " + name)
+    val res = transformer.transform(unit).asInstanceOf[CompilationUnit]
+    if (verbose)
+      reporter.info("Phase " + name + " ran with " +
+        (if (reporter.hasErrors_?) "error(s)" else "no errors"))
+
+    res
+  }
 
 }

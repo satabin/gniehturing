@@ -77,10 +77,6 @@ trait CountingReporter extends Reporter {
 
 }
 
-abstract class AccumulatingReporter extends Reporter {
-
-}
-
 abstract class ConsoleReporter extends Reporter {
 
   def report(file: File,

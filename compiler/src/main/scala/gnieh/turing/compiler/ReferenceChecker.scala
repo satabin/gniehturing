@@ -45,64 +45,94 @@ class ReferenceChecker(implicit val reporter: Reporter)
     case transition @ Transition(initial, _, _, _) =>
       transition.read.symbol match {
         case NoSymbol =>
-        // the scope is simply the one from the state
+          // the scope is simply the one from the state
+          withScope(initial.symbol.scope) {
+            super.traverse(node)
+          }
         case sym =>
+          // the symbol defines a new scope for this specific transition
+          withScope(sym.scope) {
+            super.traverse(node)
+          }
       }
-      withScope(transition.symbol.scope) {
-        super.traverse(node)
-      }
-    case InitialState(name, params) =>
-      traverse(name)
-      traverse(params)
-    case AnyChar(affect, tape) =>
-      if (affect.isDefined)
-        traverse(affect.get)
-      if (tape.isDefined)
-        traverse(tape.get)
-    case AllChar(affect, tape) =>
-      if (affect.isDefined)
-        traverse(affect.get)
-      if (tape.isDefined)
-        traverse(tape.get)
-    case NoneChar(tape) =>
-      if (tape.isDefined)
-        traverse(tape.get)
-    case SingleChar(tape, char) =>
-      if (tape.isDefined)
-        traverse(tape.get)
     case IdentRead(tape, name) =>
+      //check that tape exists
       if (tape.isDefined)
-        traverse(tape.get)
-      traverse(name)
+        checkTape(tape.get)
+      checkCharVar(name)
     case Del(tape) =>
       if (tape.isDefined)
-        traverse(tape.get)
+        checkTape(tape.get)
     case WriteChar(tape, char) =>
       if (tape.isDefined)
-        traverse(tape.get)
+        checkTape(tape.get)
     case WriteString(tape, string) =>
       if (tape.isDefined)
-        traverse(tape.get)
+        checkTape(tape.get)
     case WriteVar(tape, name) =>
       if (tape.isDefined)
-        traverse(tape.get)
-      traverse(name)
+        checkTape(tape.get)
+      checkCharVar(name)
     case Left(tape, offset) =>
       if (tape.isDefined)
-        traverse(tape.get)
+        checkTape(tape.get)
     case Right(tape, offset) =>
       if (tape.isDefined)
-        traverse(tape.get)
+        checkTape(tape.get)
     case NextIdent(name) =>
       traverse(name)
     case NextCall(tape, name, args) =>
       if (tape.isDefined)
-        traverse(tape.get)
-      traverse(name)
-      traverse(args)
+        checkTape(tape.get)
+      checkCallable(name, args.map(_.symbol.tpe))
     case _ =>
       // just delegate to super method
       super.traverse(node)
+  }
+
+  private def checkTape(ident: Ident) {
+    currentScope.lookupVar(ident.name, Some(TTape)) match {
+      case Some(sym) =>
+        // ok, set the symbol
+        ident.setSymbol(sym)
+      case None =>
+        // not found, error
+        reporter.error("Unknown tape " + ident)
+    }
+  }
+
+  private def checkCharVar(name: Ident) {
+    currentScope.lookupVar(name.name, Some(TChar)) match {
+      case Some(sym) =>
+        // ok, set the symbol
+        name.setSymbol(sym)
+      case None =>
+        // not found, error
+        reporter.error("Unknown character variable " + name)
+    }
+  }
+
+  private def checkStateVar(name: Ident) {
+    currentScope.lookupVar(name.name, Some(TState)) match {
+      case Some(sym) =>
+        // ok, set the symbol
+        name.setSymbol(sym)
+      case None =>
+        // not found, error
+        reporter.error("Unknown state " + name)
+    }
+  }
+
+  private def checkCallable(name: Ident, params: List[Type]) {
+    currentScope.lookupCallable(name.name, params) match {
+      case Some(sym) =>
+        // ok, set the symbol
+        name.setSymbol(sym)
+      case None =>
+        // not found, error
+        reporter.error("Unknown state or machine " +
+          name + params.mkString("(", ", ", ")"))
+    }
   }
 
 }

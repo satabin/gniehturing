@@ -92,7 +92,7 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
         val sym = ToInferSymbol(name.pos, name.name)(NoScope)
         currentScope.enter(sym)
         node.setSymbol(sym)
-      case Transition(initial @ InitialState(name, params), read, _, _) =>
+      case Transition(initial @ InitialState(name, params), read, _, next) =>
         // the scope of the new state
         val newScope = new Scope(currentScope)
 
@@ -102,6 +102,7 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
         }
 
         val paramSymbols = params.map(_.symbol)
+        paramSymbols.foreach(newScope.enter _)
 
         val state = currentState match {
           case None =>
@@ -130,10 +131,17 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
         initial.symbol = state
 
         // only the read part may declare some symbols in a transition
+        // the next part may reference other states, machines and characters
+        // assign a symbol to literal as well
         currentState = Some(state)
         withScope(state.scope) {
           traverse(read)
+          traverse(next)
         }
+      case next @ CharArg(v) =>
+        next.symbol = CharValueSymbol(next.pos, v)(currentScope)
+      case next @ End =>
+        next.symbol = StateSymbol(next.pos, "end", Nil)(currentScope)
       case _ =>
         // just delegate to super method
         super.traverse(node)

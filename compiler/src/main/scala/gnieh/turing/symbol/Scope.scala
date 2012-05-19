@@ -29,7 +29,7 @@ import scala.collection.mutable.Map
  * @author Lucas Satabin
  *
  */
-class Scope(parent: Option[Scope] = None) {
+class Scope(val parent: Option[Scope] = None) {
 
   def this(scope: Scope) = this(Some(scope))
 

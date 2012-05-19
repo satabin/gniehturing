@@ -79,12 +79,19 @@ class ReferenceChecker(implicit val reporter: Reporter)
     case Right(tape, offset) =>
       if (tape.isDefined)
         checkTape(tape.get)
-    case NextIdent(name) =>
-      traverse(name)
-    case NextCall(tape, name, args) =>
+    case next @ NextIdent(name) =>
+      checkStateVar(name)
+      // set the symbol
+      next.symbol = name.symbol
+    case next @ NextCall(tape, name, args) =>
       if (tape.isDefined)
         checkTape(tape.get)
+      // first traverse the arguments
+      traverse(args)
+      // then check the call
       checkCallable(name, args.map(_.symbol.tpe))
+      // set the symbol
+      next.symbol = name.symbol
     case _ =>
       // just delegate to super method
       super.traverse(node)
@@ -113,7 +120,7 @@ class ReferenceChecker(implicit val reporter: Reporter)
   }
 
   private def checkStateVar(name: Ident) {
-    currentScope.lookupVar(name.name, Some(TState)) match {
+    currentScope.lookupState(name.name, Nil) match {
       case Some(sym) =>
         // ok, set the symbol
         name.setSymbol(sym)

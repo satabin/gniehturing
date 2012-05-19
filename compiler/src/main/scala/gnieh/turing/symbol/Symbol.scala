@@ -111,3 +111,11 @@ case object NoSymbol extends Symbol(NoPosition, "no-name", TUnknown, NoScope) {
   override def toString = name + ": ?"
 
 }
+
+case class CharValueSymbol(override val pos: Position,
+                           value: Char)(scope: Scope)
+    extends Symbol(pos, "no-name", TChar, scope) {
+  val params = Nil
+
+  override def toString = value + ": char"
+}

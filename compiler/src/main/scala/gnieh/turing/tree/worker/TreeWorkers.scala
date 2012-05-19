@@ -42,16 +42,13 @@ class Traverser {
       traverse(tapes)
       traverse(transitions)
     case Transition(initial, read, actions, next) =>
-      if (initial.isDefined)
-        traverse(initial.get)
+      traverse(initial)
       traverse(read)
       traverse(actions)
       traverse(next)
-    case Decl(name, params) =>
+    case InitialState(name, params) =>
       traverse(name)
       traverse(params)
-    case Named(name) =>
-      traverse(name)
     case AnyChar(affect, tape) =>
       if (affect.isDefined)
         traverse(affect.get)
@@ -126,16 +123,14 @@ class ConservativeTransformer {
         oracle)
     case Transition(initial, read, actions, next) =>
       Transition(
-        transform(initial).asInstanceOf[Option[InitialState]],
+        transform(initial).asInstanceOf[InitialState],
         transform(read).asInstanceOf[Read],
         transform(actions).asInstanceOf[List[Action]],
         transform(next).asInstanceOf[Next])
-    case Decl(name, params) =>
-      Decl(
+    case InitialState(name, params) =>
+      InitialState(
         transform(name).asInstanceOf[Ident],
         transform(params).asInstanceOf[List[Var]])
-    case Named(name) =>
-      Named(transform(name).asInstanceOf[Ident])
     case AnyChar(affect, tape) =>
       AnyChar(
         transform(affect).asInstanceOf[Option[Var]],

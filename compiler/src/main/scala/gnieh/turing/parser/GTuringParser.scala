@@ -64,7 +64,9 @@ object GTuringParser extends RegexParsers {
       "oracle" ~> decl ^^ {
         case (ident, params) => Machine(ident, params)
       }
-        | decl ~ rep(tape) ~ rep(transition) <~ "--" ^^ {
+        | decl ~ rep(tape) ~ before(currentStateName = None) {
+          rep(transition)
+        } <~ "--" ^^ {
           case (ident, params) ~ tapes ~ transitions =>
             Machine(ident, params, tapes, transitions, false)
         })
@@ -105,8 +107,15 @@ object GTuringParser extends RegexParsers {
    */
   lazy val transition: Parser[Transition] =
     (opt(initial) <~ "|") ~ (read <~ "|") ~ (rep(action) <~ "|") ~ next ^^ {
-      case init ~ read ~ actions ~ next =>
+      case Some(init) ~ read ~ actions ~ next =>
         Transition(init, read, actions, next)
+      case None ~ read ~ actions ~ next if currentStateName.isDefined =>
+        Transition(
+          InitialState(Ident(currentStateName.get), Nil), read, actions, next)
+      case None ~ read ~ actions ~ next =>
+        currentStateName = Some(newStateName)
+        Transition(
+          InitialState(Ident(currentStateName.get), Nil), read, actions, next)
     }
 
   /**
@@ -114,7 +123,7 @@ object GTuringParser extends RegexParsers {
    *                   | <ident>
    */
   lazy val initial: Parser[InitialState] =
-    positioned(decl ^^ Decl.tupled | ident ^^ Named)
+    positioned(decl ^^ InitialState.tupled | ident ^^ (InitialState(_, Nil)))
 
   /**
    * <read> ::= <affect>? <tape_prefix>? `any'
@@ -206,5 +215,26 @@ object GTuringParser extends RegexParsers {
 
   lazy val ident: Parser[Ident] =
     positioned("[a-zA-Z_][a-zA-Z_0-9]*".r ^^ Ident)
+
+  // helper methods
+
+  private def before[T](action: => Unit)(p: => Parser[T]): Parser[T] = {
+    new Parser[T] {
+      def apply(in: Input) = {
+        action
+        p.apply(in)
+      }
+    }
+  }
+
+  private var currentStateName: Option[String] = None
+
+  private var ind = 0
+
+  private def newStateName = {
+    val res = "synthetic$state$" + ind
+    ind += 1
+    res
+  }
 
 }

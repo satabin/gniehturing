@@ -85,25 +85,20 @@ final case class Machine(name: Ident,
   }
 }
 
-final case class Transition(initial: Option[InitialState],
+final case class Transition(initial: InitialState,
                             read: Read,
                             actions: List[Action],
                             next: Next) extends Node {
 
   override def toString =
-    initial.getOrElse(" ") + " | " + read + " | " + actions.mkString(" ") +
+    initial + " | " + read + " | " + actions.mkString(" ") +
       " | " + next
 }
 
-sealed trait InitialState extends Node
-final case class Decl(name: Ident, params: List[Var]) extends InitialState {
+final case class InitialState(name: Ident, params: List[Var]) extends Node {
 
   override def toString =
     name + params.mkString("(", ", ", ")")
-}
-final case class Named(name: Ident) extends InitialState {
-
-  override def toString = name.toString
 }
 
 sealed trait Read extends Node {

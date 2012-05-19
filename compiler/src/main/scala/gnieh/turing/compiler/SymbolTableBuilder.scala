@@ -45,7 +45,7 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
         val sym = TopLevel.lookupModule(module.name) match {
           case Some(mod) => mod
           case None =>
-            val mod = ModuleSymbol(module.name)(new Scope(currentScope))
+            val mod = ModuleSymbol(module.pos, module.name)(new Scope(currentScope))
             // enter this new symbol into the parent scope
             currentScope.enter(mod)
             mod
@@ -68,7 +68,7 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
         }
         // then create machine symbol
         val sym =
-          MachineSymbol(name.name, params.map(_.symbol), oracle)(machineScope)
+          MachineSymbol(name.pos, name.name, params.map(_.symbol), oracle)(machineScope)
         // enter the new symbol in the current scope
         currentScope.enter(sym)
 
@@ -84,12 +84,12 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
         }
       case Var(name, Some(tpe)) =>
         // variable with declared type
-        val sym = VariableSymbol(name.name, tpe)(NoScope)
+        val sym = VariableSymbol(name.pos, name.name, tpe)(NoScope)
         currentScope.enter(sym)
         node.setSymbol(sym)
       case Var(name, None) =>
         // variable with no declared type
-        val sym = ToInferSymbol(name.name)(NoScope)
+        val sym = ToInferSymbol(name.pos, name.name)(NoScope)
         currentScope.enter(sym)
         node.setSymbol(sym)
       case Transition(initial @ InitialState(name, params), read, _, _) =>
@@ -106,20 +106,20 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
         val state = currentState match {
           case None =>
             // new state defined
-            val s = StateSymbol(name.name, paramSymbols)(newScope)
+            val s = StateSymbol(initial.pos, name.name, paramSymbols)(newScope)
             // enter the new state in the symbol table
             currentScope.enter(s)
             s
           case Some(state) if name.name != state.name =>
             // new state defined
-            val s = StateSymbol(name.name, paramSymbols)(newScope)
+            val s = StateSymbol(initial.pos, name.name, paramSymbols)(newScope)
             // enter the new state in the symbol table
             currentScope.enter(s)
             s
           case Some(state) if name.name == state.name
             && paramSymbols != state.params =>
             // different parameter list, new state
-            val s = StateSymbol(name.name, paramSymbols)(newScope)
+            val s = StateSymbol(initial.pos, name.name, paramSymbols)(newScope)
             // enter the new state in the symbol table
             currentScope.enter(s)
             s
@@ -140,7 +140,7 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
     }
   } catch {
     case e: CompilerException =>
-      reporter.error(e.getMessage)
+      reporter.error(e.pos, e.getMessage)
   }
 
 }

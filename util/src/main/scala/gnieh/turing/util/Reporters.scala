@@ -21,34 +21,33 @@ package gnieh.turing.util
 
 import java.io._
 
+import scala.util.parsing.input.{ Position, NoPosition }
+
 /**
  * @author Lucas Satabin
  *
  */
 trait Reporter {
 
-  def report(msg: String, exc: Exception, level: Level)
+  def report(pos: Position, msg: String, exc: Exception, level: Level)
 
-  def report(msg: String, level: Level): Unit =
-    report(msg, null, level)
-
-  def debug(msg: String) =
-    report(msg, Debug)
+  def report(pos: Position, msg: String, level: Level): Unit =
+    report(pos, msg, null, level)
 
   def info(msg: String) =
-    report(msg, Info)
+    report(NoPosition, msg, Info)
 
-  def warning(msg: String) =
-    report(msg, Warning)
+  def warning(pos: Position, msg: String) =
+    report(pos, msg, Warning)
 
-  def warning(msg: String, exc: Exception) =
-    report(msg, exc, Warning)
+  def warning(pos: Position, msg: String, exc: Exception) =
+    report(pos, msg, exc, Warning)
 
-  def error(msg: String) =
-    report(msg, Error)
+  def error(pos: Position, msg: String) =
+    report(pos, msg, Error)
 
-  def error(msg: String, exc: Exception) =
-    report(msg, exc, Error)
+  def error(pos: Position, msg: String, exc: Exception) =
+    report(pos, msg, exc, Error)
 
   def hasErrors_? : Boolean
   def hasWarnings_? : Boolean
@@ -62,13 +61,13 @@ trait CountingReporter extends Reporter {
   private[this] var errorNb = 0
   private[this] var warningNb = 0
 
-  abstract override def report(msg: String, exc: Exception, level: Level) {
+  abstract override def report(pos: Position, msg: String, exc: Exception, level: Level) {
     level match {
       case Error => errorNb += 1
       case Warning => warningNb += 1
       case _ => // nothing
     }
-    super.report(msg, exc, level)
+    super.report(pos, msg, exc, level)
   }
 
   def errors = errorNb
@@ -84,8 +83,11 @@ abstract class AccumulatingReporter extends Reporter {
 
 abstract class ConsoleReporter extends Reporter {
 
-  def report(msg: String, exception: Exception, level: Level) {
-    println("[" + level + "] " + msg)
+  def report(pos: Position, msg: String, exception: Exception, level: Level) {
+    println("[" + level + "] " +
+      (if (pos == NoPosition) "" else pos + " ") + msg)
+    if (pos != NoPosition)
+      println(pos.longString)
     if (exception != null)
       println(exception.getStackTraceString)
   }

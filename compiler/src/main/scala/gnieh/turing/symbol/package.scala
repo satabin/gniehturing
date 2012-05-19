@@ -19,6 +19,8 @@
  */
 package gnieh.turing
 
+import scala.util.parsing.input.NoPosition
+
 /**
  * @author Lucas Satabin
  *
@@ -26,7 +28,7 @@ package gnieh.turing
 package object symbol {
 
   lazy val EmptyModuleSymbol = {
-    val mod = ModuleSymbol("<empty>")(new Scope(Some(TopLevel)))
+    val mod = ModuleSymbol(NoPosition, "<empty>")(new Scope(Some(TopLevel)))
     TopLevel.enter(mod)
     mod
   }

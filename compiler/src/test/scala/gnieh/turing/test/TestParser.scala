@@ -32,11 +32,13 @@ object TestParser extends App {
 
   import GTuringParser._
 
-  val parsingResult = parseAll(machine,
+  val parsingResult = parseAll(unit,
     """m(a: char, toto: state)
       plop: tape
       q | 'a' | del right 5 | d
-      | test <- any | write "plop" toto.left | end--""") match {
+        | test <- any | write "plop" toto.left | end--
+      m2()
+      | 'a' | | end--""") match {
       case Success(m, _) =>
         println(m)
       //posPrinter.traverse(m)

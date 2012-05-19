@@ -22,9 +22,11 @@ package parser
 
 import util.Arm._
 import util.{ Reporter, Error => GTError }
-import java.io._
-
 import tree.CompilationUnit
+
+import scala.util.parsing.input.NoPosition
+
+import java.io._
 
 /**
  * This class allows the user to parse a bunch of TDML files.
@@ -42,7 +44,7 @@ class TMDLFileParser(val inputFiles: List[File])(implicit val reporter: Reporter
       parseAll(unit, reader) match {
         case Success(res, _) => Some(res)
         case failure =>
-          reporter.report(failure.toString, GTError)
+          reporter.report(NoPosition, failure.toString, GTError)
           None
       }
     }

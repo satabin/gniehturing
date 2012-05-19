@@ -21,13 +21,18 @@ package gnieh.turing
 package symbol
 
 import tree._
+
+import scala.util.parsing.input.{ Position, NoPosition }
 import scala.collection.mutable.Map
 
 /**
  * @author Lucas Satabin
  *
  */
-abstract class Symbol(val name: String, val tpe: Type, val scope: Scope) {
+abstract class Symbol(val pos: Position,
+                      val name: String,
+                      val tpe: Type,
+                      val scope: Scope) {
 
   /** Returns the list of params for this symbol if any*/
   def params: List[Symbol]
@@ -38,17 +43,19 @@ abstract class Symbol(val name: String, val tpe: Type, val scope: Scope) {
 trait CallableSymbol extends Symbol
 
 /** A variable may be either a char or a tape */
-case class VariableSymbol(override val name: String,
+case class VariableSymbol(override val pos: Position,
+                          override val name: String,
                           override val tpe: Type)(scope: Scope)
-    extends Symbol(name, tpe, scope) {
+    extends Symbol(pos, name, tpe, scope) {
   val params = Nil
 
   override def toString = name + ": " + tpe
 }
 
-case class StateSymbol(override val name: String,
+case class StateSymbol(override val pos: Position,
+                       override val name: String,
                        val params: List[Symbol])(scope: Scope)
-    extends Symbol(name, TState, scope)
+    extends Symbol(pos, name, TState, scope)
     with CallableSymbol {
 
   override def toString =
@@ -61,16 +68,17 @@ object SyntheticState {
   var ind = 0
 
   def newState(scope: Scope) = {
-    val res = StateSymbol("synthetic$state$" + ind, Nil)(scope)
+    val res = StateSymbol(NoPosition, "synthetic$state$" + ind, Nil)(scope)
     ind += 1
     res
   }
 }
 
-case class MachineSymbol(override val name: String,
+case class MachineSymbol(override val pos: Position,
+                         override val name: String,
                          val params: List[Symbol],
                          oracle: Boolean)(scope: Scope)
-    extends Symbol(name, TMachine(params.map(_.tpe)), scope)
+    extends Symbol(pos, name, TMachine(params.map(_.tpe)), scope)
     with CallableSymbol {
 
   override def toString =
@@ -79,23 +87,25 @@ case class MachineSymbol(override val name: String,
 
 }
 
-case class ModuleSymbol(override val name: String)(scope: Scope)
-    extends Symbol(name, TModule, scope) {
+case class ModuleSymbol(override val pos: Position,
+                        override val name: String)(scope: Scope)
+    extends Symbol(pos, name, TModule, scope) {
   val params = Nil
 
   override def toString = name + ": module"
 
 }
 
-case class ToInferSymbol(override val name: String)(scope: Scope)
-    extends Symbol(name, TUnknown, scope) {
+case class ToInferSymbol(override val pos: Position,
+                         override val name: String)(scope: Scope)
+    extends Symbol(pos, name, TUnknown, scope) {
   val params = Nil
 
   override def toString = name + ": ?"
 
 }
 
-case object NoSymbol extends Symbol("no-name", TUnknown, NoScope) {
+case object NoSymbol extends Symbol(NoPosition, "no-name", TUnknown, NoScope) {
   val params = Nil
 
   override def toString = name + ": ?"

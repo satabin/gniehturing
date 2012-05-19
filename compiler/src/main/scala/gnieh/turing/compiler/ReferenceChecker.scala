@@ -97,7 +97,7 @@ class ReferenceChecker(implicit val reporter: Reporter)
         ident.setSymbol(sym)
       case None =>
         // not found, error
-        reporter.error("Unknown tape " + ident)
+        reporter.error(ident.pos, "Unknown tape " + ident)
     }
   }
 
@@ -108,7 +108,7 @@ class ReferenceChecker(implicit val reporter: Reporter)
         name.setSymbol(sym)
       case None =>
         // not found, error
-        reporter.error("Unknown character variable " + name)
+        reporter.error(name.pos, "Unknown character variable " + name)
     }
   }
 
@@ -119,7 +119,7 @@ class ReferenceChecker(implicit val reporter: Reporter)
         name.setSymbol(sym)
       case None =>
         // not found, error
-        reporter.error("Unknown state " + name)
+        reporter.error(name.pos, "Unknown state " + name)
     }
   }
 
@@ -130,7 +130,7 @@ class ReferenceChecker(implicit val reporter: Reporter)
         name.setSymbol(sym)
       case None =>
         // not found, error
-        reporter.error("Unknown state or machine " +
+        reporter.error(name.pos, "Unknown state or machine " +
           name + params.mkString("(", ", ", ")"))
     }
   }

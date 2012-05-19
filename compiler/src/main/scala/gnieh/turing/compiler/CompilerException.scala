@@ -19,13 +19,17 @@
  */
 package gnieh.turing.compiler
 
+import scala.util.parsing.input.{ Position, NoPosition }
+
 /**
  * @author Lucas Satabin
  *
  */
-class CompilerException(msg: String, inner: Throwable)
+class CompilerException(msg: String, inner: Throwable, val pos: Position)
     extends Exception(msg, inner) {
 
-  def this(msg: String) = this(msg, null)
+  def this(msg: String) = this(msg, null, NoPosition)
+  def this(msg: String, pos: Position) = this(msg, null, pos)
+  def this(msg: String, inner: Throwable) = this(msg, inner, NoPosition)
 
 }

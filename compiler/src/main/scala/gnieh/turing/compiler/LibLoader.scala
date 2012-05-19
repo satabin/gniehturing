@@ -25,6 +25,8 @@ import tree.{ Type, TChar, TState }
 import util.Reporter
 import bytecode.{ BytecodeIO, Type => BCType, State => BCState, Character => BCChar }
 
+import scala.util.parsing.input.NoPosition
+
 import java.io.{ File, FilenameFilter, FileFilter }
 
 /**
@@ -40,7 +42,7 @@ class LibLoader(val options: Options)(implicit val reporter: Reporter) {
     case "2.1" =>
       BytecodeIO.forInstrType[bytecode.v2.Instruction]
     case version =>
-      reporter.warning("Unknwon bytecode version " + version +
+      reporter.warning(NoPosition, "Unknwon bytecode version " + version +
         ". Using 2.1 instead")
       BytecodeIO.forInstrType[bytecode.v2.Instruction]
   }
@@ -69,14 +71,14 @@ class LibLoader(val options: Options)(implicit val reporter: Reporter) {
             }
           } else {
             // it is neither a directory, nor a .tbc file, ignore it
-            reporter.warning(file.getName +
+            reporter.warning(NoPosition, file.getName +
               " is neither a directory, nor a .tbc file and is ignored in machine path")
           }
         }
 
       case None =>
         // ooootch, what happened there??? this should *NEVER* happen
-        reporter.warning("No bytecode reader was found for version " +
+        reporter.warning(NoPosition, "No bytecode reader was found for version " +
           options.bcVersion + ". No library will be linked")
     }
   }
@@ -92,7 +94,7 @@ class LibLoader(val options: Options)(implicit val reporter: Reporter) {
         mod.scope
       case None =>
         // add new symbol and return scope
-        val mod = ModuleSymbol(name)(new Scope(Some(TopLevel)))
+        val mod = ModuleSymbol(NoPosition, name)(new Scope(Some(TopLevel)))
         TopLevel.enter(mod)
         mod.scope
     }
@@ -104,7 +106,7 @@ class LibLoader(val options: Options)(implicit val reporter: Reporter) {
     machines.foreach {
       case (machineName, paramTypes) =>
         val macSym =
-          MachineSymbol(name, paramTypes.map(fromBCType _), false)(modScope)
+          MachineSymbol(NoPosition, name, paramTypes.map(fromBCType _), false)(modScope)
         if (modScope.contains(macSym))
           modScope.enter(macSym)
     }
@@ -112,8 +114,8 @@ class LibLoader(val options: Options)(implicit val reporter: Reporter) {
   }
 
   private def fromBCType(bctype: BCType) = bctype match {
-    case BCChar => VariableSymbol("_", TChar)(NoScope)
-    case BCState => VariableSymbol("_", TState)(NoScope)
+    case BCChar => VariableSymbol(NoPosition, "_", TChar)(NoScope)
+    case BCState => VariableSymbol(NoPosition, "_", TState)(NoScope)
   }
 
   private def findTBCFiles(dir: File): List[File] = {

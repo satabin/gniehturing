@@ -43,7 +43,8 @@ class Scope(parent: Option[Scope] = None) {
     lookupInThis(name, params) match {
       case Some(found) if found.tpe == sym.tpe =>
         // it already exists in this scope
-        throw new CompilerException(found + " already exists in current scope")
+        throw new CompilerException(found + " already exists in current scope",
+          sym.pos)
       case _ =>
         // enter it
         val byName = symbols.getOrElseUpdate(name, Map.empty[List[Type], Symbol])

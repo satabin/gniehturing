@@ -28,5 +28,5 @@ import java.io.File
 case class Options(files: List[File] = Nil,
                    path: List[File] = Nil,
                    verbose: Boolean = false,
-                   bcVersion: String = "v2.1",
+                   bcVersion: String = "2.1",
                    staticallyLinked: Boolean = false)

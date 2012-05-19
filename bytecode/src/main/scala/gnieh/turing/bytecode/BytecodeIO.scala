@@ -45,7 +45,7 @@ object BytecodeIO {
 
   /** Returns the BytecodeIO associated to the given instruction type. */
   def forInstrType[Instr: Manifest]: Option[BytecodeIO[Instr]] =
-    if (manifest[Instr] == ClassManifest.fromClass(classOf[v2.Instruction]))
+    if (manifest[Instr] <:< ClassManifest.fromClass(classOf[v2.Instruction]))
       Some(v2.BytecodeProtocol.asInstanceOf[BytecodeIO[Instr]])
     else
       None

@@ -64,7 +64,7 @@ object BytecodeProtocol
 
       def tapeRegister = {
         val byte = read[Byte](in)
-        ((byte & 0xf).toByte, ((byte & 0xf0) >> 4).toByte)
+        (((byte >> 4) & 0x0f).toByte, (byte & 0x0f).toByte)
       }
 
       read[Byte](in) match {

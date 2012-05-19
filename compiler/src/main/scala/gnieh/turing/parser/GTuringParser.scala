@@ -108,6 +108,7 @@ object GTuringParser extends RegexParsers {
   lazy val transition: Parser[Transition] =
     (opt(initial) <~ "|") ~ (read <~ "|") ~ (rep(action) <~ "|") ~ next ^^ {
       case Some(init) ~ read ~ actions ~ next =>
+        currentStateName = Some(init.name.name)
         Transition(init, read, actions, next)
       case None ~ read ~ actions ~ next if currentStateName.isDefined =>
         Transition(

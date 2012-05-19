@@ -37,7 +37,9 @@ object TestParser extends App {
       plop: tape
       q | 'a' | del right 5 | d
       | test <- any | write "plop" toto.left | end--""") match {
-      case Success(m, _) => posPrinter.traverse(m)
+      case Success(m, _) =>
+        println(m)
+      //posPrinter.traverse(m)
       case failure => println(failure)
     }
 

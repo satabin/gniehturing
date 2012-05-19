@@ -140,7 +140,7 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
     }
   } catch {
     case e: CompilerException =>
-      reporter.error(e.pos, e.getMessage)
+      reporter.error(currentFile, e.pos, e.getMessage)
   }
 
 }

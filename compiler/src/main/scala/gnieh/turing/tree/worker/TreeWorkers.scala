@@ -20,6 +20,8 @@
 package gnieh.turing.tree
 package worker
 
+import java.io.File
+
 /*
  * This file contains different worker classes to traverse and transform trees
  * @author Lucas Satabin
@@ -30,8 +32,12 @@ package worker
  * A tree traverser that inspects all the nodes.
  */
 class Traverser {
+
+  protected[this] var currentFile: File = _
+
   def traverse(node: Node): Unit = node match {
-    case CompilationUnit(module, uses, machines) =>
+    case cu @ CompilationUnit(module, uses, machines) =>
+      currentFile = cu.file
       if (module.isDefined)
         traverse(module.get)
       traverse(uses)
@@ -108,8 +114,12 @@ class Traverser {
  * The transformed node has the same type as the input node
  */
 class ConservativeTransformer {
+
+  protected[this] var currentFile: File = _
+
   def transform(node: Node): Node = node match {
-    case CompilationUnit(module, uses, machines) =>
+    case cu @ CompilationUnit(module, uses, machines) =>
+      currentFile = cu.file
       CompilationUnit(
         transform(module).asInstanceOf[Option[Ident]],
         transform(uses).asInstanceOf[List[Ident]],

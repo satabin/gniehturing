@@ -42,7 +42,7 @@ class LibLoader(val options: Options)(implicit val reporter: Reporter) {
     case "2.1" =>
       BytecodeIO.forInstrType[bytecode.v2.Instruction]
     case version =>
-      reporter.warning(NoPosition, "Unknwon bytecode version " + version +
+      reporter.warning(null, NoPosition, "Unknwon bytecode version " + version +
         ". Using 2.1 instead")
       BytecodeIO.forInstrType[bytecode.v2.Instruction]
   }
@@ -71,15 +71,16 @@ class LibLoader(val options: Options)(implicit val reporter: Reporter) {
             }
           } else {
             // it is neither a directory, nor a .tbc file, ignore it
-            reporter.warning(NoPosition, file.getName +
+            reporter.warning(null, NoPosition, file.getName +
               " is neither a directory, nor a .tbc file and is ignored in machine path")
           }
         }
 
       case None =>
         // ooootch, what happened there??? this should *NEVER* happen
-        reporter.warning(NoPosition, "No bytecode reader was found for version " +
-          options.bcVersion + ". No library will be linked")
+        reporter.warning(null, NoPosition,
+          "No bytecode reader was found for version " +
+            options.bcVersion + ". No library will be linked")
     }
   }
 

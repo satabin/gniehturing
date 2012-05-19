@@ -22,6 +22,8 @@ package tree
 
 import symbol._
 
+import java.io.File
+
 import scala.util.parsing.input.{ Position, Positional }
 
 /**
@@ -56,6 +58,13 @@ final case class CompilationUnit(module: Option[Ident],
 
     mod + u + macs
   }
+
+  var file: File = _
+  def setFile(f: File) = {
+    file = f
+    this
+  }
+
 }
 
 final case class Var(name: Ident, tpe: Option[Type] = None) extends Node {

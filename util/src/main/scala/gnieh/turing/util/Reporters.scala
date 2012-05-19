@@ -29,25 +29,25 @@ import scala.util.parsing.input.{ Position, NoPosition }
  */
 trait Reporter {
 
-  def report(pos: Position, msg: String, exc: Exception, level: Level)
+  def report(file: File, pos: Position, msg: String, exc: Exception, level: Level)
 
-  def report(pos: Position, msg: String, level: Level): Unit =
-    report(pos, msg, null, level)
+  def report(file: File, pos: Position, msg: String, level: Level): Unit =
+    report(file, pos, msg, null, level)
 
   def info(msg: String) =
-    report(NoPosition, msg, Info)
+    report(null, NoPosition, msg, Info)
 
-  def warning(pos: Position, msg: String) =
-    report(pos, msg, Warning)
+  def warning(file: File, pos: Position, msg: String) =
+    report(file, pos, msg, Warning)
 
-  def warning(pos: Position, msg: String, exc: Exception) =
-    report(pos, msg, exc, Warning)
+  def warning(file: File, pos: Position, msg: String, exc: Exception) =
+    report(file, pos, msg, exc, Warning)
 
-  def error(pos: Position, msg: String) =
-    report(pos, msg, Error)
+  def error(file: File, pos: Position, msg: String) =
+    report(file, pos, msg, Error)
 
-  def error(pos: Position, msg: String, exc: Exception) =
-    report(pos, msg, exc, Error)
+  def error(file: File, pos: Position, msg: String, exc: Exception) =
+    report(file, pos, msg, exc, Error)
 
   def hasErrors_? : Boolean
   def hasWarnings_? : Boolean
@@ -61,13 +61,13 @@ trait CountingReporter extends Reporter {
   private[this] var errorNb = 0
   private[this] var warningNb = 0
 
-  abstract override def report(pos: Position, msg: String, exc: Exception, level: Level) {
+  abstract override def report(file: File, pos: Position, msg: String, exc: Exception, level: Level) {
     level match {
       case Error => errorNb += 1
       case Warning => warningNb += 1
       case _ => // nothing
     }
-    super.report(pos, msg, exc, level)
+    super.report(file, pos, msg, exc, level)
   }
 
   def errors = errorNb
@@ -83,9 +83,14 @@ abstract class AccumulatingReporter extends Reporter {
 
 abstract class ConsoleReporter extends Reporter {
 
-  def report(pos: Position, msg: String, exception: Exception, level: Level) {
+  def report(file: File,
+             pos: Position,
+             msg: String,
+             exception: Exception,
+             level: Level) {
     println("[" + level + "] " +
-      (if (pos == NoPosition) "" else pos + " ") + msg)
+      (if (file == null) "" else file.getAbsolutePath + " ") +
+      (if (pos == NoPosition) "" else pos + "\n") + msg)
     if (pos != NoPosition)
       println(pos.longString)
     if (exception != null)

@@ -42,9 +42,9 @@ class TMDLFileParser(val inputFiles: List[File])(implicit val reporter: Reporter
       import GTuringParser._
 
       parseAll(unit, reader) match {
-        case Success(res, _) => Some(res)
+        case Success(res, _) => Some(res.setFile(file))
         case failure =>
-          reporter.report(NoPosition, failure.toString, GTError)
+          reporter.report(file, NoPosition, failure.toString, GTError)
           None
       }
     }

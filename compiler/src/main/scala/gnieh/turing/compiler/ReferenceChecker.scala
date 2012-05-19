@@ -60,6 +60,8 @@ class ReferenceChecker(implicit val reporter: Reporter)
       if (tape.isDefined)
         checkTape(tape.get)
       checkCharVar(name)
+    case read: Read if read.tape.isDefined =>
+      checkTape(read.tape.get)
     case Del(tape) =>
       if (tape.isDefined)
         checkTape(tape.get)

@@ -40,7 +40,7 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
 
   override def traverse(node: Node) = try {
     node match {
-      case CompilationUnit(Some(module), uses, machines) =>
+      case cu @ CompilationUnit(Some(module), uses, machines) =>
         // if the module is already defined, get it, otherwise, create it
         val sym = TopLevel.lookupModule(module.name) match {
           case Some(mod) => mod

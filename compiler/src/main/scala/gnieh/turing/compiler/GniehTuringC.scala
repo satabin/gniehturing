@@ -91,7 +91,7 @@ object GniehTuringC extends App {
       val result = runners.run(units)
 
       if (verbose)
-        println(result)
+        println(result.mkString("\n\n==================\n"))
 
       // ok now the tree looks like what we'd like to have, time to translate
       // to the intermediate representation (backend)

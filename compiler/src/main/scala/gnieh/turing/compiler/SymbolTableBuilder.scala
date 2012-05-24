@@ -40,24 +40,26 @@ class SymbolTableBuilder(implicit val reporter: Reporter)
 
   override def traverse(node: Node) = try {
     node match {
-      case CompilationUnit(Some(module), _, _) =>
+      case CompilationUnit(Some(module), uses, machines) =>
         // if the module is already defined, get it, otherwise, create it
         val sym = TopLevel.lookupModule(module.name) match {
           case Some(mod) => mod
           case None =>
-            val mod = ModuleSymbol(module.pos, module.name)(new Scope(currentScope))
+            val mod =
+              ModuleSymbol(module.pos, module.name)(new Scope(currentScope))
             // enter this new symbol into the parent scope
             currentScope.enter(mod)
             mod
         }
         module.setSymbol(sym)
+
         withScope(sym.scope) {
-          super.traverse(node)
+          traverse(machines)
         }
-      case CompilationUnit(None, _, _) =>
+      case CompilationUnit(None, _, machines) =>
         // no module defined, set the default module scope
         withScope(EmptyModuleSymbol.scope) {
-          super.traverse(node)
+          traverse(machines)
         }
       case Machine(name, params, tapes, transitions, oracle) =>
         // the new scope for this machine

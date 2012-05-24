@@ -29,12 +29,12 @@ import scala.collection.mutable.Map
  * @author Lucas Satabin
  *
  */
-class Scope(val parent: Option[Scope] = None) {
+class Scope(val parent: Option[Scope] = None) extends Iterable[Symbol] {
 
   def this(scope: Scope) = this(Some(scope))
 
   // the symbols defined in this scope, can be search by name and argument types
-  private[this] var symbols = Map.empty[String, Map[List[Type], Symbol]]
+  private[this] var _symbols = Map.empty[String, Map[List[Type], Symbol]]
 
   /** Enters the given symbol in this scope */
   def enter(sym: Symbol) {
@@ -47,7 +47,7 @@ class Scope(val parent: Option[Scope] = None) {
           sym.pos)
       case _ =>
         // enter it
-        val byName = symbols.getOrElseUpdate(name, Map.empty[List[Type], Symbol])
+        val byName = _symbols.getOrElseUpdate(name, Map.empty[List[Type], Symbol])
         byName(params) = sym
     }
   }
@@ -59,10 +59,10 @@ class Scope(val parent: Option[Scope] = None) {
     lookupInThis(name, params) match {
       case Some(_) =>
         // found, delete it
-        symbols(name).remove(params)
-        if (symbols(name).isEmpty) {
+        _symbols(name).remove(params)
+        if (_symbols(name).isEmpty) {
           // that was the only symbol with this name, remove it
-          symbols.remove(name)
+          _symbols.remove(name)
         }
       case None =>
       // not found, just ignore
@@ -139,18 +139,35 @@ class Scope(val parent: Option[Scope] = None) {
         None
     }
 
-  // iterator method
-  def foreach[T](fun: Symbol => T) {
-    symbols.values.flatMap(_.values).foreach(fun)
+  /**
+   * Executes the block with a copy that allows user to temporarily add
+   * new symbols, and then restore the symbols
+   */
+  def withExtras(block: => Unit) {
+    val backup = _symbols
+    try {
+      // clone the symbols
+      // TODO wouldn't it be better with immutable maps?
+      _symbols = _symbols.clone
+      // execute the block
+      block
+    } finally {
+      // restore the symbols whatever happened
+      _symbols = backup
+    }
   }
 
+  // iterator methods
+  def iterator =
+    _symbols.values.flatMap(_.values).iterator
+
   override def toString =
-    "Scope {\n" + symbols.values.flatMap(_.values).mkString("  ", "\n  ", "\n") + "}"
+    "Scope {\n" + _symbols.values.flatMap(_.values).mkString("  ", "\n  ", "\n") + "}"
 
   // helper methods
 
   private def lookupInThis(name: String, args: List[Type]) =
-    symbols.get(name).flatMap(_.get(args))
+    _symbols.get(name).flatMap(_.get(args))
 
 }
 

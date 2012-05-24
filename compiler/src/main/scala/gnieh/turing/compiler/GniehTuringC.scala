@@ -57,7 +57,7 @@ object GniehTuringC extends App {
         flag("no-output", "do not generate the compiled file, just print it to the console") {
           o => o.copy(generateOutput = false)
         },
-        arg("<file>...", ".tmdl files to compile") {
+        arglist("<file>...", ".tmdl files to compile") {
           (f, o) => o.copy(files = new File(f) :: o.files)
         })
 

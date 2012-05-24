@@ -77,7 +77,8 @@ final class TraverserRunner(name: String,
 
   def run(unit: CompilationUnit) = {
     if (verbose)
-      reporter.info("Running phase " + name)
+      reporter.info("Running phase " + name
+        + " on " + unit.file.getCanonicalPath)
     traverser.traverse(unit)
     if (verbose)
       reporter.info("Phase " + name + " ran with " +
@@ -96,7 +97,8 @@ final class ConservativeTransformerRunner(name: String,
 
   def run(unit: CompilationUnit) = {
     if (verbose)
-      reporter.info("Running phase " + name)
+      reporter.info("Running phase " + name
+        + " on " + unit.file.getCanonicalPath)
     val res = transformer.transform(unit).asInstanceOf[CompilationUnit]
     if (verbose)
       reporter.info("Phase " + name + " ran with " +

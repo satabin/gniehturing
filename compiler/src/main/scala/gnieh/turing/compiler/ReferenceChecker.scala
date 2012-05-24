@@ -38,6 +38,42 @@ class ReferenceChecker(implicit val reporter: Reporter)
     with WithScope {
 
   override def traverse(node: Node) = node match {
+    case CompilationUnit(module, uses, machines) =>
+      // the scope of the compilation unit is the scope of the module it is
+      // defined in, plus all the machines from the imports
+      // if a machine is found twice, emit an error
+      val moduleScope = module match {
+        case Some(m) => m.symbol.scope
+        case None => EmptyModuleSymbol.scope
+      }
+      val cuScope = new Scope(moduleScope)
+      uses.foreach { use =>
+        moduleScope.lookupModule(use.name) match {
+          case Some(mod) =>
+            // sets the module symbol to the use
+            use.setSymbol(mod)
+            // add the machines defined in its scope to the compilation 
+            // unit scope
+            mod.scope.foreach { sym =>
+              try {
+                cuScope.enter(sym)
+              } catch {
+                case _: CompilerException =>
+                  // the machine already exists in this scope
+                  reporter.error(currentFile, use.pos, "machine " +
+                    sym.name + sym.params.mkString("(", ", ", ")") +
+                    " in module " + mod +
+                    " is already imported from another module")
+              }
+            }
+          case None =>
+            reporter.error(currentFile, use.pos, "Unknown module " + use.name)
+        }
+      }
+
+      withScope(cuScope) {
+        traverse(machines)
+      }
     case machine: Machine =>
       withScope(machine.symbol.scope) {
         super.traverse(node)

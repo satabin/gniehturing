@@ -119,6 +119,9 @@ class Scope(val parent: Option[Scope] = None) {
     lookupInThis(name, Nil) match {
       case Some(sym: ModuleSymbol) =>
         Some(sym)
+      case _ if parent.isDefined =>
+        // not found delegate to parent if any
+        parent.get.lookupModule(name)
       case _ =>
         // not found (modules are not hierarchical, so no parent)
         None
@@ -135,6 +138,11 @@ class Scope(val parent: Option[Scope] = None) {
         // not found and no parent
         None
     }
+
+  // iterator method
+  def foreach[T](fun: Symbol => T) {
+    symbols.values.flatMap(_.values).foreach(fun)
+  }
 
   override def toString =
     "Scope {\n" + symbols.values.flatMap(_.values).mkString("  ", "\n  ", "\n") + "}"

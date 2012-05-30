@@ -1,0 +1,6 @@
+m()
+plop: tape
+q0 | 'a' | write 'a' del left 2 right write 'c'
+           left del del plop.left 
+           plop.right 4 plop.left left          | end
+--

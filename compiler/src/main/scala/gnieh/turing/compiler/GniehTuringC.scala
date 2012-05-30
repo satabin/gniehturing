@@ -22,6 +22,7 @@ package compiler
 
 import java.io.File
 
+import frontend._
 import util._
 import parser.TMDLFileParser
 
@@ -66,38 +67,32 @@ object GniehTuringC extends App {
 
   optionsParser.parse(args, Options()) match {
     case Some(options) =>
-      import options._
-      implicit val reporter = new ConsoleReporter with CountingReporter
+      // create the compiler
+      val compiler =
+        new Compiler(new ConsoleReporter with CountingReporter, options) {
+          self =>
 
-      // parses the files
-      val parser = new TMDLFileParser(options.files)
-      val units = parser.parseAllFiles
+          object tableBuilder extends SymbolTableBuilder {
+            val reporter = self.reporter
+            val options = self.options
+          }
 
-      // load the linked libraries
-      if (verbose)
-        reporter.info("Loading linked libraries from "
-          + path.mkString(File.pathSeparator))
-      val libloader = new LibLoader(options)
-      libloader.load
+          object referenceChecker extends ReferenceChecker {
+            val reporter = self.reporter
+            val options = self.options
+          }
 
-      // the different passes as runners
-      val runners =
-        Runner("symbol-table-build", new SymbolTableBuilder, verbose) andThen
-          // TODO type inference
-          (Runner("reference-check", new ReferenceChecker, verbose) andThen
-            Runner("actions-simplifier", new ActionsSimplifier, verbose))
+          object actionsSimplifier extends ActionsSimplifier {
+            val reporter = self.reporter
+            val options = self.options
+          }
 
-      // let's go and do the job to transform the tree (frontend)!
-      val result = runners.run(units)
+          val frontendSteps = List(tableBuilder, referenceChecker, actionsSimplifier)
+        }
 
-      if (verbose)
-        println(result.mkString("\n\n==================\n"))
+      // and do the job
+      compiler.gogogo
 
-      // ok now the tree looks like what we'd like to have, time to translate
-      // to the intermediate representation (backend)
-      if (!runners.reporter.hasErrors_?) {
-        // TODO
-      }
     case None =>
     // wrong option or argument, the help message was displayed
   }

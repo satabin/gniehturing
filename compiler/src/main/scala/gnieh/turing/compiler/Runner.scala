@@ -46,7 +46,7 @@ sealed abstract class Runner(val name: String,
 
   type CompilationUnits = List[CompilationUnit]
 
-  def andThen[T](next: Runner) =
+  def andThen(next: Runner) =
     new Runner(self.name, reporter, self.verbose) {
       def run(unit: CompilationUnit) = self.run(unit)
       override def run(units: CompilationUnits) = {

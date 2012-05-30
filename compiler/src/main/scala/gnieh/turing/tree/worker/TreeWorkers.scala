@@ -187,3 +187,5 @@ class ConservativeTransformer {
     nodes.map(transform(_))
 
 }
+
+class MappingTransformer

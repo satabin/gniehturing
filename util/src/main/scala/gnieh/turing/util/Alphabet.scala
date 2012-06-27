@@ -26,7 +26,7 @@ import scala.collection.immutable.{ NumericRange, SortedSet }
  *
  */
 class Alphabet(
-    characters: List[NumericRange[Char]] = Nil) {
+    private val characters: List[NumericRange[Char]] = Nil) {
 
   /** Adds a characters to the alphabet and returns the new updated alphabet.
    */
@@ -52,6 +52,9 @@ class Alphabet(
     new Alphabet(partitions("before") ::: List(merged) ::: partitions("after"))
   }
 
+  def +(other: Alphabet): Alphabet =
+    other.characters.foldLeft(this)(_ + _)
+
   /* merges two ranges. Only correct if they are continuous or intersecting */
   private def merge(range1: NumericRange[Char],
                     range2: NumericRange[Char]): NumericRange[Char] = {
@@ -68,7 +71,27 @@ class Alphabet(
       if (range.size == 1)
         range.first.toString
       else
-        range.first + "-" + range.last).mkString(", ") + "}"
+        "'" + range.first + "' - '" + range.last + "'").mkString(", ") + "}"
   }
+
+}
+
+import scala.util.parsing.combinator.RegexParsers
+
+object AlphabetParser extends RegexParsers {
+
+  lazy val alphabet: Parser[Alphabet] =
+    "{" ~> repsep(pattern, ",") <~ "}" ^^ {
+      case ranges =>
+        ranges.foldLeft(new Alphabet())(_ + _)
+    }
+
+  private lazy val pattern: Parser[NumericRange[Char]] =
+    (
+      ("'.'".r <~ "-") ~ "'.'".r ^^ {
+        case c1 ~ c2 =>
+          c1.charAt(1) to c2.charAt(1)
+      }
+      | "'.'".r ^^ (c => c.charAt(1) to c.charAt(1)))
 
 }

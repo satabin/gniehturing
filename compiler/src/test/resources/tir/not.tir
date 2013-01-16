@@ -1,0 +1,23 @@
+# translated from:
+# not()
+# q0 | '0' | write '1' right | q0
+#    | '1' | write '0' right | q0
+# --
+not() {
+  tape tape;
+  char c;
+  tape := @tape;
+q0:
+  c := read_from_tape tape;
+  ifeq '0' c jump q0-0;
+  ifeq '1' c jump q0-0;
+  stop;
+q0-0:
+  write '1' to tape;
+  move_right tape by 1;
+  jump q0;
+q0-1:
+  write '0' to tape;
+  move_right tape by 1;
+  jump q0;
+}

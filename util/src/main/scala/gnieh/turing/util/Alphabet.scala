@@ -78,7 +78,7 @@ class Alphabet(
 
 import scala.util.parsing.combinator.RegexParsers
 
-object AlphabetParser extends RegexParsers {
+trait AlphabetParser extends RegexParsers {
 
   lazy val alphabet: Parser[Alphabet] =
     "{" ~> repsep(pattern, ",") <~ "}" ^^ {
@@ -95,3 +95,4 @@ object AlphabetParser extends RegexParsers {
       | "'.'".r ^^ (c => c.charAt(1) to c.charAt(1)))
 
 }
+object AlphabetParser extends AlphabetParser

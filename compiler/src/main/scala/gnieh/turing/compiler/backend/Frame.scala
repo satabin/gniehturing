@@ -24,7 +24,7 @@ package backend
 import symbol._
 import tree._
 
-import scala.collection.mutable.Map
+import scala.collection.mutable.LinkedHashMap
 
 /**
  * A frame contains accessible symbols with their offset
@@ -32,11 +32,12 @@ import scala.collection.mutable.Map
  * @author Lucas Satabin
  *
  */
-class Frame(val offset: Int,
+class Frame(val name: String,
+            val offset: Int,
             val parent: Option[Frame] = None) {
 
   private[this] var internalOffset = 0
-  private[this] val symbols = Map.empty[Symbol, Int]
+  private[this] val symbols = LinkedHashMap.empty[Symbol, Int]
 
   /** Pushes the symbol in this frame and returns its offset inside this frame */
   def push(sym: Symbol) = {
@@ -56,5 +57,13 @@ class Frame(val offset: Int,
 
   def offsetOf(sym: Symbol) =
     symbols.getOrElse(sym, -1)
+
+  /** Returns the size of this frame */
+  def size =
+    symbols.keys.map(_.tpe match {
+      case TChar | TTape => 1
+      case TState => 3
+      case _ => 0 // should never happen
+    }).sum
 
 }

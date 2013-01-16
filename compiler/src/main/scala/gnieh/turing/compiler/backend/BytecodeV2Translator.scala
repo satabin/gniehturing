@@ -21,6 +21,7 @@ package gnieh.turing
 package compiler
 package backend
 
+import symbol._
 import tree._
 import tree.worker._
 import bytecode.v2.Instruction
@@ -38,18 +39,23 @@ class BytecodeV2Translator {
 
   object instructionsGenerator extends Traverser {
 
-    object currentFrame extends DynamicVariable[Frame](null)
+    private object currentFrame extends DynamicVariable[Frame](null)
+    private var currentOffset = 0
 
     override def traverse(node: Node) = node match {
       case Machine(name, params, tapes, transitions, false) =>
         // a non-oracle machine => new frame with offset 0
-        currentFrame.withValue(new Frame(0)) {
+        currentFrame.withValue(new Frame(name.name +
+          params.map(_.symbol.tpe.toString.charAt(0)).mkString("(", "", ")"), 0)) {
           // push the parameters into the frame
           params.foreach(p => currentFrame.value.push(p.symbol))
-          // push the tapes into the frame
+          // push the declared tapes into the frame
           tapes.foreach(t => currentFrame.value.push(t.symbol))
+          // size of the current frame as offset
+          currentOffset += currentFrame.value.size
           traverse(transitions)
         }
+      case Transition(InitialState(name, params), read, actions, next) =>
 
       case _ =>
         super.traverse(node)
